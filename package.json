@@ -1,0 +1,41 @@
+{
+  "name": "zyaro-event-store-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-tenant e-commerce event store with a schema-registry-driven analytics MCP server",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:project": "tsx scripts/project.ts",
+    "db:discover": "tsx scripts/discover.ts",
+    "db:up": "docker compose up -d && tsx scripts/wait-for-db.ts",
+    "db:down": "docker compose down -v",
+    "bootstrap": "npm run db:up && npm run db:migrate && npm run db:seed && npm run db:project && npm run db:discover",
+    "refresh": "npm run db:project && npm run db:discover",
+    "test": "vitest run",
+    "test:isolation": "vitest run tests/isolation.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

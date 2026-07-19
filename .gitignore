@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+.vitest/
+# Demo API keys are printed once by the seed script. Any local capture of them
+# is ignored by extension-agnostic glob — a narrower rule (e.g. only .json)
+# is exactly how a real key gets committed.
+credentials.local*
+*.credentials
+secrets.*
