@@ -3,7 +3,7 @@
  *
  * The theme running through this file: a wrong answer that looks like an
  * answer is worse than an error. Most of these tests assert that the system
- * refuses to fabricate — not_tracked instead of zero, NULL instead of a
+ * refuses to fabricate. Not_tracked instead of zero, NULL instead of a
  * divide-by-zero, per-currency rows instead of a meaningless sum.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -294,7 +294,7 @@ describe('time handling', () => {
     // The invariant that actually matters: an IST day starts at 18:30 UTC the
     // previous day. Asserting a fixed delta between IST-yesterday and
     // UTC-yesterday would be wrong, because once it is past 18:30 UTC the two
-    // zones disagree about which calendar day "yesterday" even is — which is
+    // zones disagree about which calendar day "yesterday" even is. Which is
     // precisely the bug this timezone handling exists to prevent.
     const ist = resolveRange({ from: 'yesterday', timezone: 'Asia/Kolkata' });
     expect(ist.fromUtc.getUTCHours()).toBe(18);
@@ -393,7 +393,7 @@ describe('dirty data', () => {
     const res = await withOrgSession(tenant.orgId, (s) =>
       s.query<{ n: string }>('SELECT count(*) n FROM events WHERE clock_skew_flag')
     );
-    // The raw rows are kept — we do not silently destroy data.
+    // The raw rows are kept. We do not silently destroy data.
     expect(Number(res.rows[0]!.n)).toBeGreaterThan(0);
   });
 
@@ -443,7 +443,7 @@ describe('funnel semantics', () => {
     }
   });
 
-  it('drop-off is not uniform — the seed models real behaviour', async () => {
+  it('drop-off is not uniform. The seed models real behaviour', async () => {
     const res = await callTool('nordvik-fashion', 'funnel', {
       steps: ['session_start', 'product_view', 'add_to_cart', 'order_complete'],
       from: 'last_90_days',

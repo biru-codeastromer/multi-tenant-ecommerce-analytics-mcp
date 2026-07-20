@@ -6,7 +6,7 @@
  * yesterday" for a Jaipur client means 2026-07-19 00:00 IST to 2026-07-20
  * 00:00 IST, which is 2026-07-18 18:30 UTC to 2026-07-19 18:30 UTC. Using UTC
  * day boundaries would silently attribute five and a half hours of every
- * evening to the wrong day — the kind of error that looks like a small daily
+ * evening to the wrong day. The kind of error that looks like a small daily
  * wobble and is never noticed.
  *
  * The window is half-open: [from, to). Inclusive-both would double-count the
@@ -69,8 +69,7 @@ function localParts(zone: string, at: Date) {
  *
  * Two-pass because the offset depends on the instant we are trying to find
  * (DST). The second pass corrects the first pass's guess, which is exact
- * except for wall-clock times that do not exist (the spring-forward gap) —
- * for those it lands on the instant the clock jumps to, which is the sane
+ * except for wall-clock times that do not exist (the spring-forward gap). * for those it lands on the instant the clock jumps to, which is the sane
  * interpretation of a range boundary.
  */
 function localToUtc(
@@ -93,7 +92,7 @@ const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**
  * Relative keywords. These exist because a model asked "how many orders last
- * week" should not have to compute IST week boundaries itself — that is
+ * week" should not have to compute IST week boundaries itself. That is
  * exactly the kind of arithmetic it gets subtly wrong.
  *
  * Weeks start Monday, matching Postgres date_trunc('week').
@@ -207,7 +206,7 @@ export function resolveRange(
     const startOfToday = localToUtc(zone, p.year, p.month, p.day);
     from = new Date(startOfToday.getTime() - 30 * 86400_000);
     to = new Date(startOfToday.getTime() + 86400_000);
-    description = 'last 30 days including today (default — no range was specified)';
+    description = 'last 30 days including today (default. No range was specified)';
   } else if (opts.from && !opts.to) {
     const kw = resolveKeyword(opts.from, zone, now);
     if (kw) {

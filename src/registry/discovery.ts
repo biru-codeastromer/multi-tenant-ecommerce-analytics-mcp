@@ -20,7 +20,7 @@
  * THE ONE RULE: this job never writes to `description` on either registry
  * table. Human-written documentation sits on top of machine-observed structure
  * and outlives it. Every UPSERT below lists its update columns explicitly, and
- * `description` is absent from all of them — that is the enforcement, and
+ * `description` is absent from all of them. That is the enforcement, and
  * tests/discovery.test.ts asserts it by writing a description, re-running the
  * job, and checking it survived.
  *
@@ -57,7 +57,7 @@ export interface DiscoveryReport {
 
 /**
  * Maps a JSONB type plus a value sample to one of our declared data types.
- * Timestamps are strings in JSON, so they are detected by shape — worth doing
+ * Timestamps are strings in JSON, so they are detected by shape. Worth doing
  * because "is this a date column" is the single most common thing a model
  * needs to know about a property key.
  */
@@ -152,7 +152,7 @@ export async function runDiscoveryForOrg(
   }
 
   // -----------------------------------------------------------------------
-  // 3. Prune events that stopped firing. Not deleted — deactivated, so
+  // 3. Prune events that stopped firing. Not deleted. Deactivated, so
   //    historical queries against them still resolve and the human-written
   //    description is not lost.
   // -----------------------------------------------------------------------
@@ -309,7 +309,7 @@ export async function runDiscoveryForOrg(
 }
 
 /**
- * Hashes exactly the registry facts the context payload renders — nothing
+ * Hashes exactly the registry facts the context payload renders. Nothing
  * more.
  *
  * event_count_30d is deliberately EXCLUDED. It changes on every single

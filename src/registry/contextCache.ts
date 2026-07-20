@@ -9,19 +9,18 @@ import { generateOrgContext, type GeneratedContext, type OrgContextInput } from 
  *   - a hit costs one cheap indexed read (the version lookup), not the six
  *     queries and the assembly pass that generating the payload costs;
  *   - a registry change invalidates immediately on the next request, because
- *     the key itself changed — there is no staleness window to reason about;
+ *     the key itself changed. There is no staleness window to reason about;
  *   - an org that never changes its taxonomy never regenerates.
  *
  * Answering README Q2 ("what happens when an org adds a new event tomorrow"):
  * the hourly discovery job observes the new name, auto-registers it, and
  * recomputes the org's version hash. The next request computes a different
- * cache key, misses, and regenerates — so the event appears in context within
+ * cache key, misses, and regenerates. So the event appears in context within
  * one discovery cycle, labelled [UNDOCUMENTED] until a human writes a
  * description. No deploy, no restart, no manual invalidation.
  *
  * Bounded to avoid unbounded growth at 50+ orgs: entries are evicted
- * least-recently-used past MAX_ENTRIES. Per-process, which is correct here —
- * two replicas each generating once on a registry change is cheaper and far
+ * least-recently-used past MAX_ENTRIES. Per-process, which is correct here. * two replicas each generating once on a registry change is cheaper and far
  * simpler than a shared cache, and the payload is deterministic so replicas
  * cannot disagree.
  */

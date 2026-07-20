@@ -10,7 +10,7 @@ const { Pool } = pg;
 // silent precision loss. That is the right default and we keep it: money is
 // stored as bigint minor units and a JS number would start lying at 2^53.
 // Conversion to a display value happens once, explicitly, in the formatting
-// layer — never implicitly here.
+// layer. Never implicitly here.
 //
 // timestamptz IS parsed to Date. timestamp (no zone) is NOT: the metric
 // templates return local wall-clock timestamps that have already been shifted

@@ -17,7 +17,7 @@
  * What the guard actually buys is: better error messages than a permission
  * denied, protection against a model wasting a turn on a query that was never
  * going to run, and defence in depth against a future misconfiguration of the
- * layer that IS load-bearing. It is written to fail closed — anything it does
+ * layer that IS load-bearing. It is written to fail closed: anything it does
  * not positively recognise as a safe single SELECT is rejected.
  *
  * Deliberately NOT a full SQL parser. A hand-rolled parser would be a large
@@ -77,7 +77,7 @@ function stripLiteralsAndComments(sql: string): string {
       out += " 'L' ";
       continue;
     }
-    // double-quoted identifier — preserved, it can legitimately be a column
+    // double-quoted identifier. Preserved, it can legitimately be a column
     if (ch === '"') {
       out += ch;
       i++;
@@ -145,7 +145,7 @@ const FORBIDDEN: { pattern: RegExp; reason: string }[] = [
   // argument that stripLiteralsAndComments() has already erased.
   //
   // set_config is ALSO revoked from mcp_tenant at the database level
-  // (migration 0010) — that revocation is the real control; this is the
+  // (migration 0010). That revocation is the real control; this is the
   // friendlier error.
   { pattern: /\bset_config\s*\(/i, reason: 'session settings cannot be changed from a query; the tenant context is set by the server' },
   { pattern: /\bcurrent_setting\s*\(/i, reason: 'session settings are not readable from a query' },

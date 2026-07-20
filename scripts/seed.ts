@@ -6,7 +6,7 @@
  *
  * It deliberately does NOT write orders, order_items, products or
  * user_profiles. Those are projections, and they are built by
- * `scripts/project.ts` from the events this script emits — because that is how
+ * `scripts/project.ts` from the events this script emits. Because that is how
  * they would be built in production, and because a seed that wrote both would
  * prove nothing about whether the projection is correct.
  *
@@ -55,9 +55,9 @@ function weightedPick(specs: EventSpec[]): EventSpec {
 //
 // 90-day analysis window, plus a deliberately older tail for the deprecated
 // event. Three signals are layered so the data does not look like noise:
-//   1. weekly seasonality  — weekends run hotter for retail
-//   2. a sale-day spike    — day -20 runs at ~3.2x
-//   3. an intra-day curve  — evening peak in the org's LOCAL time
+//   1. weekly seasonality. Weekends run hotter for retail
+//   2. a sale-day spike. Day -20 runs at ~3.2x
+//   3. an intra-day curve. Evening peak in the org's LOCAL time
 // --------------------------------------------------------------------------
 const WINDOW_DAYS = 90;
 const SALE_DAY_AGO = 20;
@@ -346,7 +346,7 @@ function generateOrgEvents(spec: OrgSpec, orgId: string, cat: Catalogue): EventR
             brand: p.brand,
           };
           // VoltEdge: the SDK type conflict. Web sends price as a string,
-          // mobile as a number — same key, two JSON types, on purpose.
+          // mobile as a number. Same key, two JSON types, on purpose.
           //
           // A share of the web strings are also locale-formatted with a
           // thousands separator ("1,299.00"). This matters: a plain
@@ -437,7 +437,7 @@ function generateOrgEvents(spec: OrgSpec, orgId: string, cat: Catalogue): EventR
         };
         // PII planted in properties so the masking policy has something real
         // to act on. ~18% of orders carry a contact detail the SDK should not
-        // have sent — which is exactly how it happens in production.
+        // have sent. Which is exactly how it happens in production.
         if (chance(0.18)) {
           orderProps.contact_email = `${user.userId.replace(/-/g, '.')}@example.com`;
         }
@@ -460,8 +460,7 @@ function generateOrgEvents(spec: OrgSpec, orgId: string, cat: Catalogue): EventR
         if (status !== 'placed') {
           const settleDays = status === 'delivered' || status === 'rto_returned' ? randInt(2, 9) : randInt(0, 3);
           const settledAt = new Date(orderAt.getTime() + settleDays * 86400_000);
-          // Only emit the transition if it has actually happened by now —
-          // otherwise recent orders would be implausibly already delivered.
+          // Only emit the transition if it has actually happened by now. // otherwise recent orders would be implausibly already delivered.
           if (settledAt <= NOW) {
             emit(pick(statusEvents), { order_id: orderId, status, previous_status: 'placed' }, settledAt);
           }
@@ -486,7 +485,7 @@ function generateOrgEvents(spec: OrgSpec, orgId: string, cat: Catalogue): EventR
   // deprecated push SDK). Generated separately because the main loop only
   // walks the last 90 days. Without these rows the event would have a NULL
   // last_seen_at and the "prune events that stopped firing" path would have
-  // nothing to prune — the deprecation-pruning behaviour would be untested.
+  // nothing to prune. The deprecation-pruning behaviour would be untested.
   for (const ev of activeEvents) {
     if (ev.activeFrom === undefined || ev.activeFrom <= WINDOW_DAYS) continue;
     const from = ev.activeFrom;
@@ -665,7 +664,7 @@ async function main(): Promise<void> {
 
     if (process.env.PRINT_DEMO_CREDENTIALS === 'true') {
       console.log('\n' + '='.repeat(78));
-      console.log('DEMO API KEYS — shown once, only the peppered hash is stored.');
+      console.log('DEMO API KEYS. Shown once, only the peppered hash is stored.');
       console.log('='.repeat(78));
       for (const k of issuedKeys) {
         console.log(`  ${k.org.padEnd(24)} ${k.label.padEnd(32)} ${k.key}`);

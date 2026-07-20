@@ -1,5 +1,5 @@
 /**
- * query_metric — the primary analytics tool.
+ * query_metric. The primary analytics tool.
  *
  * Resolution order, and why it is this order:
  *   1. metric definition, org override shadowing the global default
@@ -30,11 +30,11 @@ export const queryMetricTool: ToolDefinition<QueryMetricArgs> = {
   title: 'Query a metric',
   description:
     'Computes a named metric as a time series, optionally broken down by one dimension and filtered. THIS IS THE TOOL TO REACH FOR FIRST for any "how many / how much / what is my rate" question. ' +
-    'Metrics encode YOUR organization\'s definitions — for example whether an "order" means placed or delivered, which differs between orgs and is not something to assume. The definition used is returned with every result, so state it when you answer. ' +
+    'Metrics encode YOUR organization\'s definitions. For example whether an "order" means placed or delivered, which differs between orgs and is not something to assume. The definition used is returned with every result, so state it when you answer. ' +
     'Dates accept YYYY-MM-DD or the keywords today, yesterday, this_week, last_week, this_month, last_month, last_7_days, last_30_days, last_90_days, and are always interpreted in your org\'s reporting timezone, not UTC. ' +
     'Available metric keys are listed in the schema context; call get_schema_context if you do not have them. ' +
     'Monetary metrics return integer MINOR units (paise/cents) split by currency and must never be summed across currencies. ' +
-    'A result of status "not_tracked" means your organization does not collect the underlying event — report that, do not report zero.',
+    'A result of status "not_tracked" means your organization does not collect the underlying event. Report that, do not report zero.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -112,7 +112,7 @@ export const queryMetricTool: ToolDefinition<QueryMetricArgs> = {
           missing_concepts: missing.map((m) => m.canonical),
           concepts_this_org_does_track: availableCanonicals,
           guidance:
-            'Report that this organization does not track this. Do NOT report zero — zero would assert that the behaviour did not happen, which is a different and unsupported claim.',
+            'Report that this organization does not track this. Do NOT report zero. Zero would assert that the behaviour did not happen, which is a different and unsupported claim.',
         },
       };
     }
@@ -150,7 +150,7 @@ export const queryMetricTool: ToolDefinition<QueryMetricArgs> = {
     const capped = capPayload(flagged, config.limits.maxRows);
 
     const assumptions: string[] = [
-      `Range resolved to ${range.fromLocal} — ${range.toLocal} (${range.description}) in ${range.timezone}.`,
+      `Range resolved to ${range.fromLocal}. ${range.toLocal} (${range.description}) in ${range.timezone}.`,
     ];
     if (def.notes) assumptions.push(def.notes);
     if (def.is_override) {
@@ -172,7 +172,7 @@ export const queryMetricTool: ToolDefinition<QueryMetricArgs> = {
     const currencies = [...new Set(rows.map((r) => r.currency).filter(Boolean))] as string[];
     if (currencies.length > 1) {
       assumptions.push(
-        `Results span ${currencies.length} currencies (${currencies.join(', ')}). Rows are per-currency and MUST NOT be added together — no conversion rate is available on this server.`
+        `Results span ${currencies.length} currencies (${currencies.join(', ')}). Rows are per-currency and MUST NOT be added together. No conversion rate is available on this server.`
       );
     }
 

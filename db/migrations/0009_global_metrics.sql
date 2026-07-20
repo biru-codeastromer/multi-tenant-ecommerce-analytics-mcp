@@ -131,7 +131,7 @@ VALUES
 -- GLOBAL DEFAULT for "an order": anything that reached a committed state.
 -- Cancelled, returned and RTO-returned orders are excluded, because the
 -- overwhelmingly common intent behind "how many orders did I do" is
--- "how many stuck". Orgs that disagree override this row — see the VoltEdge
+-- "how many stuck". Orgs that disagree override this row. See the VoltEdge
 -- and BazaarHub overrides inserted by the seed script.
 (NULL, 'orders_count', 'Orders',
  'Number of orders placed in the window. GLOBAL DEFAULT: counts orders whose status is one of placed, paid, shipped, delivered. Excludes cancelled, returned and rto_returned.',
@@ -228,7 +228,7 @@ VALUES
  $tpl$,
  ARRAY['platform', 'event_name', 'city', 'acquisition_source'],
  ARRAY[]::text[],
- 'Counts only logged-in identities. Anonymous visitors are not included and are not stitched in here — see the funnel tool for identity-stitched analysis.'),
+ 'Counts only logged-in identities. Anonymous visitors are not included and are not stitched in here. See the funnel tool for identity-stitched analysis.'),
 
 (NULL, 'new_users', 'New Users',
  'Users whose first_seen_at falls inside the bucket.',

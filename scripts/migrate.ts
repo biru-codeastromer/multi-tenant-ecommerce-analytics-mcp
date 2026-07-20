@@ -1,7 +1,7 @@
 /**
  * Migration runner.
  *
- * Deliberately minimal — no migration framework. Migrations here are ordered,
+ * Deliberately minimal. No migration framework. Migrations here are ordered,
  * idempotent, forward-only SQL files applied inside a transaction each, with a
  * ledger table recording which have run and a checksum so an edited-after-apply
  * file is caught rather than silently ignored.
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
         if (previous !== checksum) {
           throw new Error(
             `Migration ${file} was modified after being applied.\n` +
-              `Migrations are forward-only — add a new file instead of editing this one.\n` +
+              `Migrations are forward-only: add a new file instead of editing this one.\n` +
               `(To rebuild from scratch locally: npm run db:reset)`
           );
         }

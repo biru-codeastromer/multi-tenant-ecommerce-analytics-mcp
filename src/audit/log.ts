@@ -45,7 +45,7 @@ function redactArgs(value: unknown, depth = 0): unknown {
  * something failed.
  *
  * Deliberately never throws. A failure to write an audit row must not turn a
- * successful analytics answer into an error for the tenant — but it must be
+ * successful analytics answer into an error for the tenant. But it must be
  * loud in the server's own logs, because a silent audit gap is how an incident
  * becomes uninvestigable.
  */
@@ -71,7 +71,7 @@ export async function writeAudit(entry: AuditEntry): Promise<void> {
     console.error(
       JSON.stringify({
         level: 'error',
-        msg: 'AUDIT WRITE FAILED — tool call executed but was not recorded',
+        msg: 'AUDIT WRITE FAILED. Tool call executed but was not recorded',
         tool: entry.toolName,
         org: entry.orgId,
         err: err instanceof Error ? err.message : String(err),

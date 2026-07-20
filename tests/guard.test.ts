@@ -3,8 +3,7 @@
  *
  * Note the framing throughout: the guard is a usability and defence-in-depth
  * layer, not the security boundary. The final describe block proves that by
- * bypassing the guard entirely and showing the database still holds the line —
- * which is the property that actually matters.
+ * bypassing the guard entirely and showing the database still holds the line. * which is the property that actually matters.
  */
 import { describe, it, expect, afterAll } from 'vitest';
 import { guardSql } from '../src/sql/guard.js';
@@ -152,7 +151,7 @@ describe('LIMIT enforcement', () => {
   it('rejects an over-long query', () => rejects(`SELECT ${'a,'.repeat(5000)}1`));
 });
 
-describe('THE ACTUAL BOUNDARY — the database, not the guard', () => {
+describe('THE ACTUAL BOUNDARY. The database, not the guard', () => {
   // These bypass guardSql entirely and hit the connection directly, proving
   // that if the guard were deleted tomorrow the isolation properties would
   // still hold. This is the difference between a security control and a

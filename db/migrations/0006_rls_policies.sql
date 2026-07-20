@@ -37,7 +37,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- organizations is keyed by `id`, not `org_id` — its own policy.
+-- organizations is keyed by `id`, not `org_id`: its own policy.
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE  ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON organizations;
@@ -48,7 +48,7 @@ CREATE POLICY tenant_isolation ON organizations
 
 -- ---------------------------------------------------------------------------
 -- metric_definitions: an org sees its own overrides plus the global defaults
--- (org_id IS NULL). It must never see another org's overrides — those encode
+-- (org_id IS NULL). It must never see another org's overrides. Those encode
 -- commercial logic like "we treat delivered as the order event because our RTO
 -- is 30%", which is a business detail, not public information.
 -- ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ CREATE POLICY tenant_isolation ON metric_definitions
 -- ---------------------------------------------------------------------------
 -- Infrastructure tables: api_credentials, audit_log, rate_limit_buckets.
 --
--- These are NOT tenant-scoped data — they are the machinery that decides who a
+-- These are NOT tenant-scoped data. They are the machinery that decides who a
 -- tenant is. They get RLS ENABLEd with zero permissive policies, which is
 -- default-deny for every non-owner role: even if somebody later adds a stray
 -- GRANT, every row stays invisible.
@@ -74,7 +74,7 @@ CREATE POLICY tenant_isolation ON metric_definitions
 -- lock out the owner too, and the owner is the only principal that legitimately
 -- writes here (issuing a credential, appending an audit row). The application
 -- roles reach these tables through three narrow SECURITY DEFINER functions
--- defined in 0007 — a fixed, auditable interface rather than table access.
+-- defined in 0007: a fixed, auditable interface rather than table access.
 --
 -- The asymmetry is the point: tenant tables are FORCEd because nothing should
 -- ever read across tenants, including us. Infrastructure tables are owner-only

@@ -1,4 +1,4 @@
-# Deployment runbook — Supabase + Railway
+# Deployment runbook. Supabase + Railway
 
 Free tier throughout. Roughly 30 minutes end to end.
 
@@ -36,20 +36,20 @@ matters:
 Locally, pointed at Supabase:
 
 ```bash
-# Role passwords — no quotes, backslashes or whitespace (they land in a SQL literal)
+# Role passwords. No quotes, backslashes or whitespace (they land in a SQL literal)
 export MCP_TENANT_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=')
 export MCP_AUTH_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=')
 export API_KEY_PEPPER=$(openssl rand -hex 32)
 
-# SESSION pooler / direct connection — port 5432
+# SESSION pooler / direct connection. Port 5432
 export DATABASE_URL_OWNER="postgresql://postgres.<ref>:<db-password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
 
-# TRANSACTION pooler — port 6543 — with the roles the migration creates
+# TRANSACTION pooler. Port 6543. With the roles the migration creates
 export DATABASE_URL_TENANT="postgresql://mcp_tenant.<ref>:${MCP_TENANT_PASSWORD}@aws-0-<region>.pooler.supabase.com:6543/postgres"
 export DATABASE_URL_AUTH="postgresql://mcp_auth.<ref>:${MCP_AUTH_PASSWORD}@aws-0-<region>.pooler.supabase.com:6543/postgres"
 
 npm run db:migrate     # creates roles, tables, FORCE RLS policies, indexes
-npm run db:seed        # 5 orgs, ~17k events — PRINTS THE API KEYS ONCE
+npm run db:seed        # 5 orgs, ~17k events. PRINTS THE API KEYS ONCE
 npm run db:project     # derives orders/order_items/products/user_profiles
 npm run db:discover    # populates the property registry
 ```
@@ -65,7 +65,7 @@ npm run db:seed 2>&1 | grep zyk_ > credentials.local.txt   # already in .gitigno
 
 ### Verify isolation actually applied
 
-Do not skip this — it is the whole assignment.
+Do not skip this: it is the whole assignment.
 
 ```bash
 npm run test:isolation     # 43 tests, run against Supabase
@@ -98,7 +98,7 @@ railway login
 railway init
 ```
 
-Set variables — **`DATABASE_URL_OWNER` is deliberately NOT set on the server.** The runtime
+Set variables. **`DATABASE_URL_OWNER` is deliberately NOT set on the server.** The runtime
 never needs owner privileges, and not having the credential present is stronger than having
 it and not using it.
 
@@ -142,7 +142,7 @@ A correct response contains an `instructions` string carrying **that org's** tax
 Supabase free tier **pauses a project after 7 days of no activity**, which would take the
 demo down mid-review. Two independent mitigations:
 
-**a. Railway cron — runs discovery hourly and touches the database.** Add to
+**a. Railway cron. Runs discovery hourly and touches the database.** Add to
 `railway.json`:
 
 ```json
@@ -164,7 +164,7 @@ keepalive is a side effect of work that needed doing rather than a fake ping.
 > That cron service **does** need `DATABASE_URL_OWNER`, since it writes. Keep it as a
 > separate service so the public-facing server never holds owner credentials.
 
-**b. An external uptime monitor** (UptimeRobot, Better Stack — both free) hitting
+**b. An external uptime monitor** (UptimeRobot, Better Stack. Both free) hitting
 `/health` every 5 minutes. `/health` runs `SELECT 1` on the auth pool, which is enough to
 count as activity, and it returns no tenant data.
 
@@ -187,12 +187,12 @@ count as activity, and it returns no tenant data.
 
 Questions worth trying:
 
-- "What events do I track?" — org-specific names, no round-trip needed
-- "How many orders did I do last week from search?" — the brief's motivating question
+- "What events do I track?". Org-specific names, no round-trip needed
+- "How many orders did I do last week from search?". The brief's motivating question
 - "Show me my funnel from session to purchase"
 - "What are people searching for that returns no results?"
-- "Compare my conversion rate to other stores" — should decline, with a reason
-- To Aurelia: "how many searches yesterday?" — should say *not tracked*, not zero
+- "Compare my conversion rate to other stores". Should decline, with a reason
+- To Aurelia: "how many searches yesterday?". Should say *not tracked*, not zero
 
 ---
 
@@ -218,7 +218,7 @@ resolving instantly.
 | Supabase | Free | 500 MB storage; pauses after 7 idle days |
 | Railway | Free/Hobby | $5/mo credit; sleeps on the free plan |
 
-The 17k-event seed is roughly 25 MB with indexes — comfortably inside 500 MB. At real
+The 17k-event seed is roughly 25 MB with indexes. Comfortably inside 500 MB. At real
 production volume, `events` is what grows, and monthly partitioning plus a retention policy
 (README → *What I'd build next*) is the answer.
 
@@ -230,7 +230,7 @@ production volume, `events` is what grows, and monthly partitioning plus a reten
 |---|---|---|
 | `password authentication failed for user "mcp_tenant"` | Roles created before the password env var was set, or a mismatch | Re-run `npm run db:migrate`; `ALTER ROLE` is idempotent |
 | Queries return 0 rows for everything | Tenant context not applied | Confirm `set_tenant_context` exists (migration 0010) and the role holds EXECUTE |
-| `permission denied for function set_config` | **Expected** for `mcp_tenant` — this is migration 0010 working | Nothing to fix; context goes through `set_tenant_context()` |
+| `permission denied for function set_config` | **Expected** for `mcp_tenant`. This is migration 0010 working | Nothing to fix; context goes through `set_tenant_context()` |
 | `remaining connection slot reserved` | Using the direct connection instead of the transaction pooler | Point `DATABASE_URL_TENANT`/`_AUTH` at port 6543 |
 | Migration fails on `${MCP_TENANT_PASSWORD}` | Password contains a quote/backslash/space | Regenerate with the `tr -d '/+='` recipe above |
 | Project paused | 7 idle days | Resume in the dashboard, then set up the keepalive in step 4 |

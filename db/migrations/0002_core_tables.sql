@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 );
 
 -- ---------------------------------------------------------------------------
--- api_credentials — how an MCP connection resolves to an org.
+-- api_credentials. How an MCP connection resolves to an org.
 --
 -- The org is derived from the credential and NOTHING else. No tool takes an
 -- org_id argument, so there is no path from model output to tenant selection.
@@ -49,7 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_api_credentials_active
   ON api_credentials(key_hash) WHERE revoked_at IS NULL;
 
 -- ---------------------------------------------------------------------------
--- events — the append-only raw stream.
+-- events. The append-only raw stream.
 --
 -- NOT partitioned. Justification in README §"Why no partitioning": at 20k seed
 -- rows and a realistic near-term ceiling of low millions, a partitioned parent

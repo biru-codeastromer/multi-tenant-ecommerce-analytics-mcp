@@ -6,7 +6,7 @@
 -- THE VULNERABILITY
 -- -----------------
 -- RLS resolves the tenant through current_setting('app.current_org_id'). Any
--- role can call set_config() on a custom GUC — that privilege is granted to
+-- role can call set_config() on a custom GUC. That privilege is granted to
 -- PUBLIC by default. So a tenant reaching the raw-SQL tool could send:
 --
 --     SELECT set_config('app.current_org_id', '<other-org-uuid>', true),
@@ -31,7 +31,7 @@
 --   1. mcp_tenant loses EXECUTE on set_config() entirely. It cannot write any
 --      GUC, by any spelling, from any query.
 --   2. set_tenant_context() refuses to change a context that is already set.
---      One tenant per transaction, enforced in the database — so even a role
+--      One tenant per transaction, enforced in the database. So even a role
 --      that somehow regained set_config could not switch mid-transaction.
 -- ===========================================================================
 
@@ -41,7 +41,7 @@
 -- CRITICAL IMPLEMENTATION NOTE: this function deliberately has NO `SET` clause
 -- (no `SET search_path = ...`). A function carrying a SET clause pushes a GUC
 -- nest level, and any set_config() performed inside it is REVERTED when the
--- function returns — which would make this silently do nothing.
+-- function returns. Which would make this silently do nothing.
 --
 -- Omitting search_path on a SECURITY DEFINER function is normally a
 -- privilege-escalation risk, because an attacker-controlled search_path can
@@ -65,7 +65,7 @@ BEGIN
   -- NULLIF/COALESCE are SQL constructs, not pg_catalog functions, and cannot
   -- be schema-qualified. Since this function has no search_path SET clause
   -- (see the note above), everything in the body must be either qualified or
-  -- a bare SQL construct — hence the explicit IF rather than a NULLIF.
+  -- a bare SQL construct. Hence the explicit IF rather than a NULLIF.
   existing := pg_catalog.current_setting('app.current_org_id', true);
   IF existing = '' THEN
     existing := NULL;
@@ -102,6 +102,6 @@ GRANT  EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO CURRENT
 GRANT  EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO mcp_auth;
 
 -- current_setting() is read-only and cannot change the tenant, so it is not
--- revoked — current_org_id() itself depends on it. The SQL guard still blocks
+-- revoked. Current_org_id() itself depends on it. The SQL guard still blocks
 -- direct reads of app.current_org_id, purely to keep the tenant id out of
 -- query results where it could end up in a model's context window.

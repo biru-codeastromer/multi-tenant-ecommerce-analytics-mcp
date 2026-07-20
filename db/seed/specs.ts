@@ -81,7 +81,7 @@ const COMMON_SOURCES = ['organic', 'paid_search', 'social', 'referral', 'email',
 
 export const ORG_SPECS: OrgSpec[] = [
   // =========================================================================
-  // 1. Fashion — mobile-first, India. The "reference" taxonomy.
+  // 1. Fashion. Mobile-first, India. The "reference" taxonomy.
   // =========================================================================
   {
     slug: 'nordvik-fashion',
@@ -98,7 +98,7 @@ export const ORG_SPECS: OrgSpec[] = [
     funnel: { productView: 0.62, addToCart: 0.21, checkout: 0.11, order: 0.058 },
     statusMix: { placed: 0.06, paid: 0.09, shipped: 0.12, delivered: 0.62, cancelled: 0.07, returned: 0.04 },
     notes:
-      'Mobile-first Indian fashion retailer. Fires app_open on every foreground resume, so sessions_started reads high relative to unique_sessions — this is real and documented rather than smoothed away.',
+      'Mobile-first Indian fashion retailer. Fires app_open on every foreground resume, so sessions_started reads high relative to unique_sessions. This is real and documented rather than smoothed away.',
     events: [
       {
         name: 'app_open',
@@ -162,7 +162,7 @@ export const ORG_SPECS: OrgSpec[] = [
         canonical: null,
         category: 'engagement',
         displayName: 'Wishlist Added',
-        description: 'Saved for later. No canonical mapping — wishlisting is not a cart add.',
+        description: 'Saved for later. No canonical mapping. Wishlisting is not a cart add.',
         weight: 4,
       },
       // Stopped firing ~7 months ago. Present in the registry, must be pruned
@@ -194,7 +194,7 @@ export const ORG_SPECS: OrgSpec[] = [
   },
 
   // =========================================================================
-  // 2. Grocery — web-heavy, high repeat rate, mid-stream event rename.
+  // 2. Grocery. Web-heavy, high repeat rate, mid-stream event rename.
   // =========================================================================
   {
     slug: 'freshcart-grocery',
@@ -212,7 +212,7 @@ export const ORG_SPECS: OrgSpec[] = [
     funnel: { productView: 0.44, addToCart: 0.38, checkout: 0.26, order: 0.19 },
     statusMix: { placed: 0.04, paid: 0.06, shipped: 0.05, delivered: 0.79, cancelled: 0.06 },
     notes:
-      'Grocery: high conversion, low browse depth, strong weekly seasonality. Renamed basket_add to cart_add on day -45 without a backfill — both names appear in the history and the registry documents the seam.',
+      'Grocery: high conversion, low browse depth, strong weekly seasonality. Renamed basket_add to cart_add on day -45 without a backfill. Both names appear in the history and the registry documents the seam.',
     events: [
       {
         name: 'website_open',
@@ -306,7 +306,7 @@ export const ORG_SPECS: OrgSpec[] = [
   },
 
   // =========================================================================
-  // 3. Electronics — multi-currency, and a JSONB type conflict.
+  // 3. Electronics. Multi-currency, and a JSONB type conflict.
   // =========================================================================
   {
     slug: 'voltedge-electronics',
@@ -325,7 +325,7 @@ export const ORG_SPECS: OrgSpec[] = [
     funnel: { productView: 0.71, addToCart: 0.14, checkout: 0.07, order: 0.031 },
     statusMix: { placed: 0.08, paid: 0.11, shipped: 0.14, delivered: 0.55, cancelled: 0.08, returned: 0.04 },
     notes:
-      'Cross-border electronics selling in GBP, EUR and USD. Recognises revenue on delivery, not on order — hence the metric override. An SDK bug sends `price` as a string on web and a number on mobile.',
+      'Cross-border electronics selling in GBP, EUR and USD. Recognises revenue on delivery, not on order. Hence the metric override. An SDK bug sends `price` as a string on web and a number on mobile.',
     metricOverride: {
       metricKey: 'orders_count',
       displayName: 'Orders (delivered)',
@@ -350,7 +350,7 @@ export const ORG_SPECS: OrgSpec[] = [
         category: 'discovery',
         displayName: 'PDP View',
         description:
-          'Product detail page view. WARNING: the `price` property is a string on web and a number on mobile — use jsonb_to_numeric(properties->\'price\') rather than a direct cast.',
+          'Product detail page view. WARNING: the `price` property is a string on web and a number on mobile. Use jsonb_to_numeric(properties->\'price\') rather than a direct cast.',
         weight: 30,
       },
       {
@@ -414,7 +414,7 @@ export const ORG_SPECS: OrgSpec[] = [
   },
 
   // =========================================================================
-  // 4. D2C skincare — deliberately tiny, and tracks no search at all.
+  // 4. D2C skincare. Deliberately tiny, and tracks no search at all.
   // =========================================================================
   {
     slug: 'aurelia-skincare',
@@ -431,7 +431,7 @@ export const ORG_SPECS: OrgSpec[] = [
     funnel: { productView: 0.58, addToCart: 0.24, checkout: 0.15, order: 0.11 },
     statusMix: { placed: 0.1, paid: 0.14, delivered: 0.68, cancelled: 0.08 },
     notes:
-      'Early-stage D2C brand: ~320 events total, and a catalogue of four products with no search functionality shipped yet. Exists to test sparse/empty result handling and the honest "this org does not track that" path — asking for search volume here must NOT return zero.',
+      'Early-stage D2C brand: ~320 events total, and a catalogue of four products with no search functionality shipped yet. Exists to test sparse/empty result handling and the honest "this org does not track that" path: asking for search volume here must NOT return zero.',
     events: [
       {
         name: 'app_launch',
@@ -485,7 +485,7 @@ export const ORG_SPECS: OrgSpec[] = [
   },
 
   // =========================================================================
-  // 5. Marketplace — three session-open events, offline kiosk/POS, 30% RTO.
+  // 5. Marketplace. Three session-open events, offline kiosk/POS, 30% RTO.
   // =========================================================================
   {
     slug: 'bazaarhub-marketplace',
@@ -503,7 +503,7 @@ export const ORG_SPECS: OrgSpec[] = [
     // 30% RTO: the whole reason this org redefines what an order is.
     statusMix: { placed: 0.07, paid: 0.05, shipped: 0.09, delivered: 0.45, cancelled: 0.04, rto_returned: 0.3 },
     notes:
-      'Marketplace with online and offline (kiosk + in-store POS) channels. THREE distinct session-open events — app_open, website_open and kiosk_open — all mapping to session_start, which is the case that breaks any implementation assuming a one-to-one canonical mapping. 30% RTO drives the delivered-only order definition.',
+      'Marketplace with online and offline (kiosk + in-store POS) channels. THREE distinct session-open events: app_open, website_open and kiosk_open: all mapping to session_start, which is the case that breaks any implementation assuming a one-to-one canonical mapping. 30% RTO drives the delivered-only order definition.',
     metricOverride: {
       metricKey: 'orders_count',
       displayName: 'Orders (delivered, net of RTO)',

@@ -7,8 +7,7 @@
  * before any tool is registered. There is no shared mutable "current tenant"
  * that a concurrent request could race against.
  *
- * The alternative — one long-lived server plus a request-scoped context —
- * works right up until an async boundary interleaves two requests, and then
+ * The alternative. One long-lived server plus a request-scoped context. * works right up until an async boundary interleaves two requests, and then
  * fails silently and catastrophically. Constructing per request costs a few
  * microseconds and removes the entire class of bug.
  */
@@ -159,7 +158,7 @@ export async function buildServerForTenant(
 
       return {
         content: [{ type: 'text', text: renderResponse(result) }],
-        // not_tracked and empty are NOT errors — they are correct answers.
+        // not_tracked and empty are NOT errors. They are correct answers.
         // Marking them isError would tell the model its query failed, and it
         // would retry a question that was already answered.
         isError: result.status === 'error',

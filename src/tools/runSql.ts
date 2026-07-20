@@ -1,5 +1,5 @@
 /**
- * run_sql — guarded read-only fallback for anything the semantic tools do not
+ * run_sql. Guarded read-only fallback for anything the semantic tools do not
  * model.
  *
  * Deliberately described to the model as a LAST RESORT. Every question that
@@ -11,7 +11,7 @@
  * Safety recap (full reasoning in src/sql/guard.ts): the guard rejects
  * multi-statement input, DDL/DML, SET ROLE, writable CTEs, filesystem and
  * network functions, and forces a LIMIT. But the guard is not the security
- * boundary — the SELECT-only role and FORCE RLS are. A query that slipped past
+ * boundary. The SELECT-only role and FORCE RLS are. A query that slipped past
  * the guard entirely would still only be able to read this tenant's rows.
  */
 import type { ToolDefinition } from './types.js';
@@ -23,9 +23,9 @@ export const runSqlTool: ToolDefinition<{ sql: string; explain_intent?: string }
   name: 'run_sql',
   title: 'Run guarded SQL',
   description:
-    'Executes a single read-only SELECT against your organization\'s analytics tables. USE THIS ONLY when query_metric, funnel, top_n, list_events and describe_event cannot express the question — those tools encode your org\'s own metric definitions, timezone handling and event-name mapping, all of which you must reimplement correctly here. ' +
+    'Executes a single read-only SELECT against your organization\'s analytics tables. USE THIS ONLY when query_metric, funnel, top_n, list_events and describe_event cannot express the question. Those tools encode your org\'s own metric definitions, timezone handling and event-name mapping, all of which you must reimplement correctly here. ' +
     'Available tables: events, orders, order_items, products, user_profiles, identity_links, event_definitions, event_property_definitions, metric_definitions. Call get_schema_context for columns and join keys. ' +
-    'Do NOT add an organization filter — every table is already scoped to your org by the database, and there is no column you could filter on that would change that. ' +
+    'Do NOT add an organization filter. Every table is already scoped to your org by the database, and there is no column you could filter on that would change that. ' +
     'Rules: one statement, no semicolon chaining, SELECT/WITH only, no DDL or DML, no EXPLAIN. A LIMIT is applied automatically if you omit one. ' +
     'Timestamps are stored in UTC; render them in your reporting timezone with AT TIME ZONE. Money columns are integer minor units. ' +
     'For JSONB properties that may hold mixed types, use public.jsonb_to_numeric(properties->\'key\') rather than a direct ::numeric cast, which errors on string rows.',
@@ -36,7 +36,7 @@ export const runSqlTool: ToolDefinition<{ sql: string; explain_intent?: string }
       explain_intent: {
         type: 'string',
         description:
-          'One line on what you are trying to learn. Recorded in the audit log and used to improve the semantic tool surface — if a question keeps arriving here, it should become a proper metric.',
+          'One line on what you are trying to learn. Recorded in the audit log and used to improve the semantic tool surface: if a question keeps arriving here, it should become a proper metric.',
       },
     },
     required: ['sql'],
@@ -56,7 +56,7 @@ export const runSqlTool: ToolDefinition<{ sql: string; explain_intent?: string }
     const assumptions: string[] = [];
     if (guarded.limitApplied) {
       assumptions.push(
-        `A LIMIT of ${guarded.appliedLimit} was applied automatically. If you need more rows, aggregate server-side with GROUP BY instead — returning more rows would exceed the response budget.`
+        `A LIMIT of ${guarded.appliedLimit} was applied automatically. If you need more rows, aggregate server-side with GROUP BY instead. Returning more rows would exceed the response budget.`
       );
     }
     assumptions.push(
@@ -69,7 +69,7 @@ export const runSqlTool: ToolDefinition<{ sql: string; explain_intent?: string }
         summary: 'The query ran successfully and matched zero rows.',
         assumptions: [
           ...assumptions,
-          'This is an EMPTY RESULT, not an error — the SQL was valid and executed. If you expected rows, the most likely cause is an event name that this org does not use: call list_events to check.',
+          'This is an EMPTY RESULT, not an error. The SQL was valid and executed. If you expected rows, the most likely cause is an event name that this org does not use: call list_events to check.',
         ],
         data: [],
         meta: {

@@ -62,7 +62,7 @@ export function extractApiKey(headers: Record<string, string | string[] | undefi
  *
  * There is no cache. That is a conscious latency-for-correctness trade: the
  * brief requires revocation to take effect immediately rather than at next
- * restart, and any cache — even a 30-second one — is a window in which a
+ * restart, and any cache. Even a 30-second one: is a window in which a
  * revoked key still works. The lookup is a single indexed equality probe on a
  * partial index over non-revoked keys, so it costs well under a millisecond.
  * If it ever became the bottleneck, the correct fix is a cache with an

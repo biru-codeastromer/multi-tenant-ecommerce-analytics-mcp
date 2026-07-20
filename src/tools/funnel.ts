@@ -1,5 +1,5 @@
 /**
- * funnel — ordered event list -> step-wise conversion.
+ * funnel. Ordered event list -> step-wise conversion.
  *
  * DESIGN DECISIONS worth knowing about, all surfaced in the response so a
  * model never has to guess which semantics it got:
@@ -10,7 +10,7 @@
  *
  * IDENTITY. Default actor is the stitched identity: user_id when known, and
  * otherwise the user_id linked to that anonymous_id if we have ever seen them
- * log in on that device. This answers the brief's question — yes, a pre-login
+ * log in on that device. This answers the brief's question. Yes, a pre-login
  * session counts toward that user's funnel, because the alternative reports a
  * conversion whose first three steps are missing. `by: "session"` gives the
  * stricter within-one-session reading, and `by: "device"` ignores stitching.
@@ -43,7 +43,7 @@ export const funnelTool: ToolDefinition<FunnelArgs> = {
     'Computes step-wise conversion through an ordered sequence of events. Each step must occur AFTER the previous one for the same actor and within a time window, so this measures real progression rather than co-occurrence. ' +
     'Steps accept canonical concepts (session_start, product_view, search, add_to_cart, checkout_start, order_complete) or your org\'s raw event names. Prefer canonical: it keeps working across event renames and is portable. ' +
     'by="user" (default) stitches anonymous activity to the user who later logged in on that device, so pre-login steps count. by="session" restricts the whole sequence to one session. by="device" uses the raw device id with no stitching. ' +
-    'Returns per-step counts, step-to-step conversion, and overall conversion. If your org does not track one of the requested steps you get status "not_tracked" naming the step — report that rather than a zero for that stage.',
+    'Returns per-step counts, step-to-step conversion, and overall conversion. If your org does not track one of the requested steps you get status "not_tracked" naming the step. Report that rather than a zero for that stage.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -132,7 +132,7 @@ export const funnelTool: ToolDefinition<FunnelArgs> = {
             untracked.map((u) => [u, closestMatches(u, [...byCanonical.keys(), ...rawNames])])
           ),
           guidance:
-            'Report that this organization does not track the named step. Do NOT report zero conversion for it — that would assert users failed to convert, when in fact the event is simply not collected.',
+            'Report that this organization does not track the named step. Do NOT report zero conversion for it. That would assert users failed to convert, when in fact the event is simply not collected.',
         },
       };
     }
@@ -160,7 +160,7 @@ export const funnelTool: ToolDefinition<FunnelArgs> = {
     // ---- ordered funnel ----------------------------------------------------
     // A single `base` CTE resolves the actor once, then one CTE per step reads
     // from it. Resolving the actor per step instead would mean repeating the
-    // identity-stitching lateral join in every step — and, more immediately,
+    // identity-stitching lateral join in every step: and, more immediately,
     // an alias defined in a JOIN cannot be referenced from that same JOIN's ON
     // clause, which is what the earlier per-step shape got wrong.
     //
@@ -244,7 +244,7 @@ export const funnelTool: ToolDefinition<FunnelArgs> = {
         status: 'empty',
         summary: `No actors entered the funnel at step 1 ("${resolvedSteps[0]!.label}") between ${range.fromLocal} and ${range.toLocal}.`,
         assumptions: [
-          `Range ${range.fromLocal} — ${range.toLocal} in ${range.timezone}.`,
+          `Range ${range.fromLocal}. ${range.toLocal} in ${range.timezone}.`,
           'A genuine zero for the period, not a query failure. Downstream steps are necessarily zero and their conversion rates are null (not computable), not 0%.',
         ],
         data: stepResults,
@@ -253,7 +253,7 @@ export const funnelTool: ToolDefinition<FunnelArgs> = {
     }
 
     const assumptions = [
-      `Range ${range.fromLocal} — ${range.toLocal} (${range.description}) in ${range.timezone}.`,
+      `Range ${range.fromLocal}. ${range.toLocal} (${range.description}) in ${range.timezone}.`,
       `Steps must occur in order, each within ${windowHours}h of the previous one.`,
       by === 'user'
         ? 'Actors are identity-stitched: anonymous activity is attributed to the user who later logged in on that device, so pre-login steps DO count toward that user\'s funnel.'
@@ -270,7 +270,7 @@ export const funnelTool: ToolDefinition<FunnelArgs> = {
 
     return {
       status: 'ok',
-      summary: `${first.toLocaleString()} entered, ${last.toLocaleString()} completed — ${((last / first) * 100).toFixed(2)}% overall conversion across ${resolvedSteps.length} steps.`,
+      summary: `${first.toLocaleString()} entered, ${last.toLocaleString()} completed. ${((last / first) * 100).toFixed(2)}% overall conversion across ${resolvedSteps.length} steps.`,
       assumptions,
       data: stepResults,
       meta: {

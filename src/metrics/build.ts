@@ -1,5 +1,5 @@
 /**
- * Metric SQL builder — turns a stored sql_template into a bound, executable
+ * Metric SQL builder. Turns a stored sql_template into a bound, executable
  * query.
  *
  * THE SECURITY MODEL, stated plainly because this is the one place where
@@ -129,7 +129,7 @@ export function buildMetricQuery(opts: BuildOptions): BuiltMetricQuery {
     const spec = DIMENSION_SQL[opts.dimension];
     if (!spec) {
       // allowed_dimensions listed something the builder has no expression for.
-      // A configuration bug, not a caller error — fail loudly rather than
+      // A configuration bug, not a caller error. Fail loudly rather than
       // silently ignoring the requested breakdown.
       throw new McpToolError(
         'internal',
@@ -211,7 +211,7 @@ export function buildMetricQuery(opts: BuildOptions): BuiltMetricQuery {
     }
   }
 
-  // Guard against a template that still has an unfilled placeholder — that
+  // Guard against a template that still has an unfilled placeholder. That
   // would be a silent correctness bug, so it must be loud.
   const leftover = /\{\{[A-Z_]+\}\}/.exec(sql);
   if (leftover) {

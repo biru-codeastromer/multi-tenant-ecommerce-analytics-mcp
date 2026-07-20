@@ -1,8 +1,8 @@
 # Local development stand-in for Supabase Postgres.
 #
 # Pinned to Postgres 16, which is within the range Supabase runs (15-17). The
-# features this project leans on — FORCE ROW LEVEL SECURITY, set_config with
-# is_local, role-scoped statement_timeout, jsonb_path_ops GIN — behave
+# features this project leans on. FORCE ROW LEVEL SECURITY, set_config with
+# is_local, role-scoped statement_timeout, jsonb_path_ops GIN. Behave
 # identically across all three, so the local/production gap is not meaningful
 # here. The one real difference is the connection pooler, which does not exist
 # locally; tests/isolation.test.ts simulates its backend-reuse behaviour with a

@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Weekly, so a dependency change that breaks the build is caught before a
+  # reviewer finds it rather than after.
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  test:
+    name: typecheck + build + 176 tests
+    runs-on: ubuntu-latest
+
+    # A real Postgres, not a mock. The entire isolation model is database
+    # behaviour (FORCE RLS, role privileges, transaction-scoped GUCs), so a
+    # mocked database would test nothing that matters here.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: zyaro_owner
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: zyaro_events
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U zyaro_owner -d zyaro_events"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate CI secrets
+        # Generated per run and thrown away. Nothing here is a real credential,
+        # and no secret is ever read from the repository.
+        run: |
+          {
+            echo "DATABASE_URL_OWNER=postgresql://zyaro_owner:ci_only_password@localhost:54329/zyaro_events"
+            echo "MCP_TENANT_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=')"
+            echo "MCP_AUTH_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=')"
+            echo "API_KEY_PEPPER=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
+
+      - name: Compose tenant connection strings
+        run: |
+          {
+            echo "DATABASE_URL_TENANT=postgresql://mcp_tenant:${MCP_TENANT_PASSWORD}@localhost:54329/zyaro_events"
+            echo "DATABASE_URL_AUTH=postgresql://mcp_auth:${MCP_AUTH_PASSWORD}@localhost:54329/zyaro_events"
+          } >> "$GITHUB_ENV"
+
+      - run: npm run typecheck
+      - run: npm run build
+
+      - name: Migrate, seed, project, discover
+        run: |
+          npm run db:migrate
+          npm run db:seed
+          npm run db:project
+          npm run db:discover
+        env:
+          PRINT_DEMO_CREDENTIALS: 'false'
+
+      - name: Full test suite
+        run: npm test
+
+      # Run the isolation suite a second time on its own. If a future change
+      # made isolation depend on state left behind by another suite, the
+      # combined run above could pass while this fails.
+      - name: Tenant isolation suite, in isolation
+        run: npm run test:isolation
+
+  secrets-scan:
+    name: no committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if a real API key or .env was ever committed
+        run: |
+          set -e
+          if git log --all --diff-filter=A --name-only --format='' \
+             | sort -u | grep -qE '^\.env$|credentials\.local|^secrets\.'; then
+            echo "::error::A secret file exists in git history"
+            exit 1
+          fi
+          # zyk_ keys are 43-char base64url secrets. The only permitted match is
+          # the deliberately-invalid fixture used to test credential rejection.
+          leaked=$(git grep -hoE 'zyk_[A-Za-z0-9_-]{35,}' $(git rev-list --all) -- 2>/dev/null \
+                   | sort -u | grep -v 'zyk_nope_invalid_key_value_here' || true)
+          if [ -n "$leaked" ]; then
+            echo "::error::Possible live API key in history: $leaked"
+            exit 1
+          fi
+          echo "No secrets found in history."

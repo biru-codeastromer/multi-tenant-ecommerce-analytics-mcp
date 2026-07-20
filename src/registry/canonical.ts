@@ -14,7 +14,7 @@
  * factual assertion about user behaviour that happens to be false.
  *
  * Returning zero there would be the single most damaging bug in the system,
- * because it is invisible — the number looks like an answer. So resolution
+ * because it is invisible. The number looks like an answer. So resolution
  * returns a discriminated union and every caller must handle `not_tracked`.
  */
 import type { TenantSession } from '../db/tenantSession.js';
@@ -39,7 +39,7 @@ export async function resolveCanonical(
   }
 
   // Include an inactive-event check so we can distinguish "never tracked" from
-  // "tracked once, now silent" — a materially different answer for the user.
+  // "tracked once, now silent": a materially different answer for the user.
   const { rows: inactive } = await session.query<{ event_name: string; last_seen_at: string | null }>(
     `SELECT event_name, last_seen_at::text FROM event_definitions
      WHERE canonical_name = $1 AND NOT is_active

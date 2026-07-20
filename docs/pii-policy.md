@@ -5,7 +5,7 @@
 `events.properties` is an open JSONB bag filled by client SDKs we do not control. In
 practice it accumulates contact details nobody intended to send: a checkout form serialises
 its whole state, a debug field ships to production, a developer adds `contact_email`
-"temporarily". The seed data reproduces this deliberately — ~18% of orders carry a
+"temporarily". The seed data reproduces this deliberately: ~18% of orders carry a
 `contact_email` and ~10% a `contact_phone`.
 
 For an analytics MCP the risk is specific and worse than ordinary data exposure: query
@@ -19,10 +19,10 @@ has left the database's control permanently.**
 
 Property keys are flagged `is_pii` when either the key name or its observed values match:
 
-- **Key patterns** — `email`, `phone`, `mobile`, `msisdn`, `address`, `street`, `postcode`,
+- **Key patterns**: `email`, `phone`, `mobile`, `msisdn`, `address`, `street`, `postcode`,
   `zip`, `pincode`, `ssn`, `aadhaar`, `pan`, `dob`, `birth`, `card`, `cvv`, `iban`,
   `account_no`, matched on word boundaries.
-- **Value patterns** — anything shaped like an email address or an 8–15 digit phone number.
+- **Value patterns**: anything shaped like an email address or an 8-15 digit phone number.
 
 Value matching matters because the key is often uninformative (`p_src`, `field_7`).
 
@@ -32,7 +32,7 @@ Value matching matters because the key is often uninformative (`p_src`, `field_7
 stored empty and `enum_values` is left `NULL`.
 
 This is the highest-leverage control here. The registry feeds the data dictionary shipped
-to every model on every connection — a sample containing a real email would be transmitted
+to every model on every connection: a sample containing a real email would be transmitted
 on *every session*, indefinitely, to *every* client. The key is still documented, so the
 model knows it exists and what type it is; only the values are withheld.
 
@@ -58,7 +58,7 @@ Tool arguments are model-authored free text and can contain anything a user past
 chat. Before persisting, keys matching `api_key`, `token`, `secret`, `password`,
 `authorization`, `bearer` are replaced with `[redacted]`, and long strings are truncated.
 
-## Limits — stated plainly
+## Limits, stated plainly
 
 This policy is **pattern-based**, and pattern-based detection has a floor:
 
@@ -79,16 +79,16 @@ This policy is **pattern-based**, and pattern-based detection has a floor:
 
 ## What I'd do with more time
 
-1. **Ingest-time rejection or hashing** — the real fix. Catching PII at write time means it
+1. **Ingest-time rejection or hashing**, which is the real fix. Catching PII at write time means it
    never lands in the store, rather than being masked on the way out. Requires a schema
    contract per org, which is a client-onboarding problem as much as a technical one.
-2. **An allowlist rather than a denylist** — orgs declare which property keys are
+2. **An allowlist rather than a denylist**, where orgs declare which property keys are
    analytically meaningful; everything else is stored but never returned. Denylists lose to
    novelty by construction; allowlists fail closed.
 3. **A trained NER pass** over sampled values for names and addresses, which regexes cannot
    reach.
-4. **Per-org policy configuration** — jurisdictions differ, and a GDPR-scope merchant needs
+4. **Per-org policy configuration**. Jurisdictions differ, and a GDPR-scope merchant needs
    stricter defaults than the platform's.
-5. **A right-to-erasure path** — `events` is append-only by design, which is correct for an
+5. **A right-to-erasure path**. `events` is append-only by design, which is correct for an
    event store and awkward for GDPR Article 17. The usual answer is crypto-shredding:
    encrypt per-user PII fields with a per-user key and delete the key on request.

@@ -1,5 +1,5 @@
 /**
- * HTTP entrypoint — MCP over Streamable HTTP.
+ * HTTP entrypoint. MCP over Streamable HTTP.
  *
  * AUTH MODEL: the API key arrives in the Authorization header and is resolved
  * to an org on EVERY request. There is no session, no cookie, and no server-
@@ -67,7 +67,7 @@ app.get('/health', async (_req: Request, res: Response) => {
 
 app.get('/', (_req: Request, res: Response) => {
   res.json({
-    service: 'Multi-Tenant E-Commerce Event Store — Analytics MCP Server',
+    service: 'Multi-Tenant E-Commerce Event Store: Analytics MCP Server',
     mcp_endpoint: '/mcp',
     transport: 'streamable-http',
     auth: 'Authorization: Bearer <api-key>',

@@ -4,9 +4,9 @@
 -- Two application roles, both NOLOGIN-capable-but-LOGIN, neither owning
 -- anything, neither superuser, neither BYPASSRLS:
 --
---   mcp_tenant — serves every analytics query. SELECT only, on tenant tables
+--   mcp_tenant. Serves every analytics query. SELECT only, on tenant tables
 --                only. Cannot see api_credentials or audit_log at all.
---   mcp_auth   — resolves an API key to an org and appends audit rows.
+--   mcp_auth. Resolves an API key to an org and appends audit rows.
 --                Holds NO table privileges whatsoever; it can only EXECUTE
 --                three fixed functions.
 --
@@ -104,7 +104,7 @@ GRANT EXECUTE ON FUNCTION public.mask_pii(text)            TO mcp_tenant;
 -- Filesystem / network escape hatches.
 --
 -- These are superuser-only by default in stock Postgres, so the REVOKEs below
--- are belt-and-braces rather than the actual control — the actual control is
+-- are belt-and-braces rather than the actual control. The actual control is
 -- that mcp_tenant is NOSUPERUSER. They are written explicitly anyway because
 -- an extension installed later (dblink, postgres_fdw, file_fdw) can arrive
 -- with EXECUTE granted to PUBLIC, and this migration is where a reviewer
@@ -150,7 +150,7 @@ END $$;
 -- ---------------------------------------------------------------------------
 
 -- 1. Resolve a peppered key hash to an org. Returns zero rows for an unknown
---    OR revoked key — revocation therefore takes effect on the very next
+--    OR revoked key. Revocation therefore takes effect on the very next
 --    request, with no cache to invalidate and no restart required.
 CREATE OR REPLACE FUNCTION public.auth_resolve_credential(p_key_hash text)
 RETURNS TABLE (

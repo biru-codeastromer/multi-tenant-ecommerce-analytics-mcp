@@ -7,12 +7,12 @@
  *
  * What these tests can and cannot prove is worth being precise about:
  *
- *   CAN prove — the payload is explicitly delimited and labelled as untrusted,
+ *   CAN prove. The payload is explicitly delimited and labelled as untrusted,
  *   the injected string cannot close the fence early, and, decisively, that a
  *   successful injection has nothing to steer: no tool takes an org_id, and
  *   RLS means even a fully compromised model gets only its own tenant's rows.
  *
- *   CANNOT prove — that a model will always obey the delimiter. Nothing can.
+ *   CANNOT prove. That a model will always obey the delimiter. Nothing can.
  *   That is exactly why the isolation guarantee is placed in the database
  *   rather than in the model's good behaviour.
  */
@@ -90,7 +90,7 @@ describe('untrusted data is delimited', () => {
     expect(wrapped.trimEnd().endsWith('END_UNTRUSTED_TENANT_DATA>>>')).toBe(true);
   });
 
-  it('our own metadata is NOT fenced — fencing everything would train the model to ignore it', async () => {
+  it('our own metadata is NOT fenced. Fencing everything would train the model to ignore it', async () => {
     const res = await callTool('nordvik-fashion', 'query_metric', {
       metric: 'orders_count', from: 'last_30_days',
     });
@@ -150,7 +150,7 @@ describe('errors do not leak across tenants', () => {
     expect(safe.code).toBe('internal');
     expect(safe.message).toBe('The request could not be completed.');
     // The internal detail is retained for the audit log, which tenants cannot
-    // read — but it must not appear in what goes back to the caller.
+    // read. But it must not appear in what goes back to the caller.
     expect(safe.message).not.toContain('other-org-uuid');
     expect(safe.message).not.toContain('secret-key');
     expect(safe.internalDetail).toContain('other-org-uuid');
@@ -218,7 +218,7 @@ describe('PII handling', () => {
     const row = res.rows[0]!;
     expect(row.email).toBe('a***@example.com');
     expect(row.phone).toMatch(/^\*\*\*\d{2}$/);
-    // Ordinary values must pass through untouched — over-masking destroys
+    // Ordinary values must pass through untouched. Over-masking destroys
     // legitimate analytics.
     expect(row.normal).toBe('blue running shoes');
   });

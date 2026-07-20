@@ -39,7 +39,7 @@ beforeAll(async () => {
   orgs = await loadTestOrgs();
   orgA = orgs.get('nordvik-fashion')!;
   orgB = orgs.get('freshcart-grocery')!;
-  expect(orgA, 'seed data missing — run `npm run bootstrap`').toBeDefined();
+  expect(orgA, 'seed data missing. Run `npm run bootstrap`').toBeDefined();
   expect(orgB).toBeDefined();
 });
 
@@ -49,7 +49,7 @@ afterAll(async () => {
 });
 
 // ===========================================================================
-describe('Layer 0 — the automatic-fail conditions', () => {
+describe('Layer 0. The automatic-fail conditions', () => {
   it('the tenant role is not superuser and does not have BYPASSRLS', async () => {
     // Supabase's service_role bypasses RLS entirely. If the server ever
     // connected with it, every policy in this repo would be decoration.
@@ -79,7 +79,7 @@ describe('Layer 0 — the automatic-fail conditions', () => {
       for (const key of Object.keys(props)) {
         expect(
           forbidden.test(key),
-          `Tool "${tool.name}" exposes "${key}" — a model-controllable tenant selector is an automatic fail.`
+          `Tool "${tool.name}" exposes "${key}": a model-controllable tenant selector is an automatic fail.`
         ).toBe(false);
       }
     }
@@ -105,13 +105,13 @@ describe('Layer 0 — the automatic-fail conditions', () => {
       expect(r.rls, `${r.relname}: RLS not enabled`).toBe(true);
       // FORCE is the half everyone forgets: without it the table OWNER, and
       // any job connecting as owner, silently reads every tenant.
-      expect(r.forced, `${r.relname}: RLS enabled but NOT FORCED — the owner bypasses it`).toBe(true);
+      expect(r.forced, `${r.relname}: RLS enabled but NOT FORCED. The owner bypasses it`).toBe(true);
     }
   });
 });
 
 // ===========================================================================
-describe('Layer 1 — cross-tenant reads through normal queries', () => {
+describe('Layer 1. Cross-tenant reads through normal queries', () => {
   it('org A sees only its own events', async () => {
     const rows = await withOrgSession(orgA.id, (s) =>
       s.query<{ org_id: string }>('SELECT DISTINCT org_id FROM events')
@@ -184,7 +184,7 @@ describe('Layer 1 — cross-tenant reads through normal queries', () => {
 
   it('ATTACK: aggregate counts do not leak the other tenant\'s volume', async () => {
     // A count is a side channel if RLS is applied to row output but not to
-    // the scan. It is not — but this is the test that would notice.
+    // the scan. It is not. But this is the test that would notice.
     const res = await withOrgSession(orgA.id, (s) =>
       s.query<{ n: string }>('SELECT count(*) n FROM events WHERE org_id = $1', [orgB.id])
     );
@@ -212,7 +212,7 @@ describe('Layer 1 — cross-tenant reads through normal queries', () => {
 });
 
 // ===========================================================================
-describe('Layer 2 — deny by default when there is no tenant context', () => {
+describe('Layer 2. Deny by default when there is no tenant context', () => {
   it('a session with NO org context reads zero rows from every tenant table', async () => {
     // The single most important negative test. A policy written as
     // USING (org_id = current_setting(...)::uuid) without the missing_ok flag
@@ -243,7 +243,7 @@ describe('Layer 2 — deny by default when there is no tenant context', () => {
 });
 
 // ===========================================================================
-describe('Layer 3 — the pooler session-leak attack', () => {
+describe('Layer 3. The pooler session-leak attack', () => {
   it('tenant context does NOT survive across transactions on the same backend', async () => {
     // THE BUG THE BRIEF WARNS ABOUT.
     //
@@ -336,8 +336,8 @@ describe('Layer 3 — the pooler session-leak attack', () => {
   //
   // The application SQL guard had missed it because the guard strips string
   // literals before matching keywords, which also erased the GUC name it was
-  // pattern-matching on. The fix is at the privilege layer — mcp_tenant no
-  // longer holds EXECUTE on set_config at all — with the guard rule as the
+  // pattern-matching on. The fix is at the privilege layer. Mcp_tenant no
+  // longer holds EXECUTE on set_config at all. With the guard rule as the
   // second layer. These tests assert the privilege-layer fix specifically,
   // bypassing the guard entirely.
   // -------------------------------------------------------------------------
@@ -398,7 +398,7 @@ describe('Layer 3 — the pooler session-leak attack', () => {
 });
 
 // ===========================================================================
-describe('Layer 4 — privilege boundaries of the tenant role', () => {
+describe('Layer 4. Privilege boundaries of the tenant role', () => {
   const denied = async (sql: string, params: unknown[] = []) => {
     await expect(
       withOrgSession(orgA.id, (s) => s.query(sql, params)),
@@ -473,7 +473,7 @@ describe('Layer 4 — privilege boundaries of the tenant role', () => {
 });
 
 // ===========================================================================
-describe('Layer 5 — credential resolution', () => {
+describe('Layer 5. Credential resolution', () => {
   it('a valid key resolves to exactly its own org', async () => {
     const a = await resolveCredential(orgA.apiKey);
     const b = await resolveCredential(orgB.apiKey);
@@ -522,7 +522,7 @@ describe('Layer 5 — credential resolution', () => {
     await client.end();
   });
 
-  it('the raw key is never stored — only a peppered hash', async () => {
+  it('the raw key is never stored. Only a peppered hash', async () => {
     const client = await ownerClient();
     const { rows } = await client.query<{ key_hash: string; key_prefix: string }>(
       'SELECT key_hash, key_prefix FROM api_credentials LIMIT 20'
@@ -541,7 +541,7 @@ describe('Layer 5 — credential resolution', () => {
 });
 
 // ===========================================================================
-describe('Layer 6 — the audit log', () => {
+describe('Layer 6. The audit log', () => {
   it('is append-only even for the owner', async () => {
     const client = await ownerClient();
     await client.query(

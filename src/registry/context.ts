@@ -23,8 +23,7 @@
  *     taxonomy documentation.
  *
  * If the assembled payload exceeds the budget, sections are dropped in reverse
- * priority order rather than the whole thing being truncated mid-sentence —
- * a payload that ends mid-table is worse than one that is honestly shorter.
+ * priority order rather than the whole thing being truncated mid-sentence. * a payload that ends mid-table is worse than one that is honestly shorter.
  */
 import type { TenantSession } from '../db/tenantSession.js';
 
@@ -184,7 +183,7 @@ export async function generateOrgContext(
     key: 'header',
     priority: 1,
     body: [
-      `# ${org.orgName} — analytics context`,
+      `# ${org.orgName}: analytics context`,
       `tz=${org.timezone} | currency=${org.currency} | data=${dateRange} | registry=${versionHash.slice(0, 8)}`,
       '',
       'You are querying ONE organization. Tenant scoping is enforced by the database;',
@@ -199,7 +198,7 @@ export async function generateOrgContext(
     const vol = compactNumber(Number(e.event_count_30d));
     const canon = e.canonical_name ? ` ~${e.canonical_name}` : '';
     const flag = e.auto_registered && !e.description ? ' [UNDOCUMENTED]' : '';
-    const desc = e.description ? ` — ${clip(e.description, 72)}` : '';
+    const desc = e.description ? `. ${clip(e.description, 72)}` : '';
     return `${e.event_name}${canon} [${e.category[0]}] ${vol}/30d${flag}${desc}`;
   });
 
@@ -237,7 +236,7 @@ export async function generateOrgContext(
       '## CANONICAL MAP (cross-org concept -> this org\'s event names)',
       ...canonLines,
       missing.length
-        ? `NOT TRACKED by this org: ${missing.join(', ')}. If asked about these, say this organization does not track them — do NOT report zero.`
+        ? `NOT TRACKED by this org: ${missing.join(', ')}. If asked about these, say this organization does not track them. Do NOT report zero.`
         : '',
     ]
       .filter(Boolean)
@@ -254,14 +253,14 @@ export async function generateOrgContext(
       key: 'warnings',
       priority: 4,
       body: [
-        '## DATA QUALITY — read before writing SQL',
+        '## DATA QUALITY. Read before writing SQL',
         ...conflicts.map(
           (p) =>
             `${p.event_name}.${p.property_key}: MIXED JSON TYPES. Use jsonb_to_numeric(properties->'${p.property_key}'), never a direct ::numeric cast.`
         ),
         ...notes.map((e) => `${e.event_name}: ${clip(e.quality_note, 170)}`),
         ...undocumented.map(
-          (e) => `${e.event_name}: undocumented — inferred from traffic only.`
+          (e) => `${e.event_name}: undocumented: inferred from traffic only.`
         ),
       ].join('\n'),
     });
@@ -321,16 +320,16 @@ export async function generateOrgContext(
     key: 'metrics',
     priority: 7,
     body: [
-      '## METRICS (query_metric) — these encode YOUR definitions, prefer them over raw SQL',
+      '## METRICS (query_metric). These encode YOUR definitions, prefer them over raw SQL',
       ...metrics.map((m) => {
         const dims = m.allowed_dimensions.length ? ` dims:${m.allowed_dimensions.join(',')}` : ' dims:none';
         const star = m.is_override ? ' *ORG-SPECIFIC*' : '';
-        return `${m.metric_key} (${m.unit})${star}${dims} — ${clip(m.description, 76)}`;
+        return `${m.metric_key} (${m.unit})${star}${dims}. ${clip(m.description, 76)}`;
       }),
     ].join('\n'),
   });
 
-  // Org-specific metric notes are high value and low volume — the whole point
+  // Org-specific metric notes are high value and low volume. The whole point
   // of the semantic layer is that these assumptions travel with the number.
   const overrideNotes = metrics.filter((m) => m.is_override && m.notes);
   if (overrideNotes.length) {
@@ -338,7 +337,7 @@ export async function generateOrgContext(
       key: 'metric_notes',
       priority: 4.5,
       body: [
-        '## YOUR METRIC OVERRIDES — state these assumptions when you answer',
+        '## YOUR METRIC OVERRIDES. State these assumptions when you answer',
         ...overrideNotes.map((m) => `${m.metric_key}: ${clip(m.notes, 220)}`),
       ].join('\n'),
     });
@@ -465,7 +464,7 @@ function buildExamples(
   } else {
     out.push(
       `Q: what are people searching for?`,
-      `A: This organization does not track a search event. Say so — do not return 0.`
+      `A: This organization does not track a search event. Say so. Do not return 0.`
     );
   }
 
@@ -480,7 +479,7 @@ function buildExamples(
   out.push(
     `Q: conversion rate this month`,
     `A: query_metric(metric="conversion_rate", from="month_start", to="today"). Returns NULL`,
-    ` for buckets with zero sessions — that means "not computable", not 0%.`
+    ` for buckets with zero sessions. That means "not computable", not 0%.`
   );
 
   const override = metrics.find((m) => m.is_override);

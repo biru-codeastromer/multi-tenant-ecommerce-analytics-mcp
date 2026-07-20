@@ -1,5 +1,5 @@
 -- ===========================================================================
--- 0005  Audit log — append-only, and NOT readable by tenants
+-- 0005  Audit log: append-only, and NOT readable by tenants
 -- ===========================================================================
 
 CREATE TABLE IF NOT EXISTS audit_log (

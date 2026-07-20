@@ -72,7 +72,7 @@ export class RateLimitError extends McpToolError {
  *
  * The default branch is the important one: any error we did not explicitly
  * anticipate collapses to a generic "internal" with no detail at all. That is
- * a deliberate choice to fail closed on information disclosure — a stack trace
+ * a deliberate choice to fail closed on information disclosure: a stack trace
  * or a Postgres detail string is exactly the channel through which one tenant
  * learns about another's schema.
  */

@@ -1,7 +1,7 @@
 /**
  * Drops and rebuilds the schema from scratch.
  *
- * For local development only — it exists because migrations are forward-only
+ * For local development only: it exists because migrations are forward-only
  * and checksum-verified, so an unreleased migration that needs correcting is
  * fixed in place and replayed rather than patched with a follow-up file.
  * Once a migration has shipped, add a new one instead.

@@ -163,7 +163,7 @@ describe('the discovery job', () => {
     }
   });
 
-  it('is idempotent — a second run changes nothing', async () => {
+  it('is idempotent: a second run changes nothing', async () => {
     const client = await ownerClient();
     const org = orgs.get('aurelia-skincare')!;
 
@@ -232,7 +232,7 @@ describe('the generated context payload', () => {
     }
   });
 
-  it('ALWAYS includes worked examples — they are never dropped for budget', async () => {
+  it('ALWAYS includes worked examples. They are never dropped for budget', async () => {
     // Few-shot pairs are the highest-value tokens in the payload, so the
     // budget-trimming logic must sacrifice something else first.
     for (const slug of orgs.keys()) {
@@ -302,7 +302,7 @@ describe('context caching', () => {
 
   it('a registry change invalidates the cache on the next request', async () => {
     // README Q2: "how does your context payload change when an org adds a new
-    // event tomorrow?" — the version hash changes, so the cache key changes,
+    // event tomorrow?". The version hash changes, so the cache key changes,
     // so the next request regenerates. No restart, no manual invalidation.
     clearContextCache();
     const org = orgs.get('aurelia-skincare')!;
@@ -342,7 +342,7 @@ describe('context caching', () => {
     await client.end();
   });
 
-  it('caches are keyed per org — no cross-org bleed', async () => {
+  it('caches are keyed per org. No cross-org bleed', async () => {
     clearContextCache();
     const a = orgs.get('nordvik-fashion')!;
     const b = orgs.get('freshcart-grocery')!;

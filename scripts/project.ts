@@ -13,7 +13,7 @@
  * them, and because the writes are upserts, reprocessing an overlapping window
  * is harmless.
  *
- * Runs as the OWNER role — it writes, and the tenant role is SELECT-only. It
+ * Runs as the OWNER role: it writes, and the tenant role is SELECT-only. It
  * loops over orgs explicitly rather than relying on RLS, and sets the tenant
  * GUC anyway so that FORCE RLS is a second check on its own correctness.
  */
@@ -174,8 +174,8 @@ async function projectOrg(client: pg.Client, org: OrgRow): Promise<Record<string
            p.user_id,
            COALESCE(ls.status, 'placed'),
            -- A malformed or missing order value becomes 0 rather than
-           -- aborting the whole projection. The alternative — dropping the
-           -- order — would silently understate order COUNTS too.
+           -- aborting the whole projection. The alternative. Dropping the
+           -- order. Would silently understate order COUNTS too.
            GREATEST(COALESCE(p.total_minor, 0)::bigint, 0),
            p.currency,
            p.placed_at,
@@ -245,7 +245,7 @@ async function projectOrg(client: pg.Client, org: OrgRow): Promise<Record<string
     [org.id]
   );
 
-  // Sessions are not projected into a table — the funnel tool reads them from
+  // Sessions are not projected into a table. The funnel tool reads them from
   // events directly, because session shape differs enough per org that a
   // fixed projection would be lossy. Recorded here so the omission is visible.
   counts.sessions_source_events = sessionEvents.length;

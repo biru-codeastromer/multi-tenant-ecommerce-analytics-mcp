@@ -1,5 +1,5 @@
 -- ===========================================================================
--- 0004  The schema registry — what makes the MCP self-describing per tenant
+-- 0004  The schema registry. What makes the MCP self-describing per tenant
 -- ===========================================================================
 
 -- ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS idx_event_definitions_canonical
 -- Auto-populated by the discovery job from observed JSONB keys: inferred type,
 -- cardinality, sample values, and enum values when cardinality is low enough
 -- to enumerate. `description` is the human layer on top and is never
--- clobbered — that split is the whole point of the table.
+-- clobbered. That split is the whole point of the table.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS event_property_definitions (
   org_id               uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS event_property_definitions (
 );
 
 -- ---------------------------------------------------------------------------
--- metric_definitions — the semantic layer.
+-- metric_definitions. The semantic layer.
 --
 -- This is where "what counts as an order" is answered, per org. One client
 -- means status='placed'; another means status='delivered' because they run 30%
@@ -126,7 +126,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_metric_definitions_global_key
   ON metric_definitions(metric_key) WHERE org_id IS NULL;
 
 -- ---------------------------------------------------------------------------
--- registry_version — cache key for the generated context payload.
+-- registry_version. Cache key for the generated context payload.
 --
 -- The context string is expensive to build and near-static. It is cached
 -- server-side under (org_id, version_hash); the hash changes only when

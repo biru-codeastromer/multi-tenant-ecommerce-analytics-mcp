@@ -6,7 +6,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 
 /**
  * The only handle a tool ever gets on the database. It exposes `query` and
- * nothing else — no access to the raw client, so no tool can issue its own
+ * nothing else. No access to the raw client, so no tool can issue its own
  * BEGIN/COMMIT or otherwise step outside the tenant transaction.
  */
 export interface TenantSession {
@@ -37,7 +37,7 @@ export interface TenantSession {
  * never inherits Org A's context.
  *
  * set_config is used rather than string-interpolating into `SET LOCAL` because
- * SET does not accept bind parameters — the interpolated form would be an
+ * SET does not accept bind parameters. The interpolated form would be an
  * injection site sitting directly on the tenant-selection path, which is the
  * last place in the system that should have one. The UUID is regex-validated
  * before it gets here as well; both, not either.
@@ -68,7 +68,7 @@ export async function withOrgSession<T>(
     // Transaction-scoped, discarded automatically at COMMIT/ROLLBACK.
     //
     // Routed through set_tenant_context() rather than calling set_config()
-    // directly because mcp_tenant no longer HOLDS execute on set_config — see
+    // directly because mcp_tenant no longer HOLDS execute on set_config. See
     // migration 0010. Before that migration a tenant could call set_config in
     // raw SQL and switch itself to another org mid-transaction, which was an
     // exploitable cross-tenant read. The wrapper also refuses to change a
