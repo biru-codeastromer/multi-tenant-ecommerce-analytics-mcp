@@ -83,9 +83,13 @@ Deployment to Supabase + Render (both free, no credit card): **[docs/deploy.md](
 
 ## Demo credentials
 
-> Live endpoint and the two demo keys (Org A / Org B) are in the submission email rather
-> than committed here. The repo is public, and a committed credential is a committed
-> credential regardless of whether it points at demo data.
+**Live MCP endpoint:** `https://zyaro-analytics-mcp.onrender.com/mcp`
+(health check: `https://zyaro-analytics-mcp.onrender.com/health`)
+
+> The two demo keys (Org A / Org B) are in the submission email rather than committed here.
+> The repo is public, and a committed credential is a committed credential regardless of
+> whether it points at demo data. The endpoint is on a free tier, so the first request
+> after 15 minutes of idle takes ~30-60s to wake; retry once and it is fast thereafter.
 
 Both keys are read-only, rate-limited to 60 req/min, and scoped to their own org by the
 database. The seed issues **three** keys per org: a full key, a restricted
