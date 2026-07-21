@@ -77,7 +77,7 @@ Connecting from Claude Desktop:
 }
 ```
 
-Deployment to Supabase + Railway: **[docs/deploy.md](docs/deploy.md)**.
+Deployment to Supabase + Render (both free, no credit card): **[docs/deploy.md](docs/deploy.md)**.
 
 ---
 

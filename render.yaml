@@ -1,0 +1,54 @@
+# Render Blueprint. Deploys the MCP server on Render's FREE tier (no credit card).
+#
+# Render provides the free web service; Supabase provides the free Postgres.
+# Render's own free Postgres is deliberately NOT used here because it is deleted
+# 30 days after creation, whereas a Supabase free project only pauses when idle
+# and keeps its data.
+#
+# To use: push this repo to GitHub, then in the Render dashboard choose
+# "New +" -> "Blueprint" and point it at the repo. Render reads this file,
+# creates the service, and prompts for the four secret env vars below
+# (sync: false means "ask me, never read from git").
+#
+# What is free here:
+#   * web service on the `free` plan, no card required
+#   * 750 instance-hours / month (one always-on service fits inside this)
+#   * managed TLS + a public onrender.com URL
+#
+# The one honest caveat: a free web service sleeps after 15 minutes idle and
+# takes ~30-60s to answer the first request after that. For a demo a reviewer
+# connects to occasionally, that cold start is acceptable; the free cron in
+# docs/deploy.md keeps both this service and the Supabase project warm.
+services:
+  - type: web
+    name: zyaro-analytics-mcp
+    runtime: node
+    plan: free
+    # Closest free region to an India-based reviewer. Also available: oregon,
+    # ohio, virginia, frankfurt.
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is injected by Render and read by src/config.ts. Do NOT set it.
+      # --- secrets: entered in the Render dashboard, never stored in git ------
+      # Use the Supabase TRANSACTION pooler (port 6543) for both DB URLs.
+      - key: DATABASE_URL_TENANT
+        sync: false
+      - key: DATABASE_URL_AUTH
+        sync: false
+      # Must match the pepper used when the database was seeded, or every
+      # issued key stops resolving.
+      - key: API_KEY_PEPPER
+        sync: false
+      # --- tuning: safe to keep as-is ----------------------------------------
+      - key: STATEMENT_TIMEOUT_MS
+        value: "8000"
+      - key: MAX_ROWS_RETURNED
+        value: "500"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"
