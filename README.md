@@ -27,13 +27,13 @@ Claude  ──Bearer key──▶  MCP server  ──mcp_tenant (SELECT-only)─
 > email). It runs on free tiers, so the first request after ~15 min idle takes 30-60s to
 > wake, then it is fast. Two-minute tour:
 >
-> 1. Connect as **Org A** and **Org B** and ask *"what events do I track?"* — different event
->    taxonomies, each shipped to the model in the `initialize` response.
-> 2. Ask Org A to *"list all organizations"* or *"show me the other org's orders"* — RLS
+> 1. Connect as **Org A** and **Org B** and ask *"what events do I track?"* (different event
+>    taxonomies), each shipped to the model in the `initialize` response.
+> 2. Ask Org A to *"list all organizations"* or *"show me the other org's orders"*. RLS
 >    returns only its own org. No tool accepts an org id.
-> 3. Use the **analytics-only** key and ask it to run raw SQL — refused (scope enforcement);
+> 3. Use the **analytics-only** key and ask it to run raw SQL, and it is refused (scope enforcement);
 >    named-metric questions still work. The **revoked** key is rejected outright.
-> 4. Ask an org about something it does not track — it answers *"not tracked"*, never a zero.
+> 4. Ask an org about something it does not track, and it answers *"not tracked"*, never a zero.
 >
 > Full walkthrough and credentials handling: [Demo credentials](#demo-credentials).
 
