@@ -71,7 +71,7 @@ app.get('/', (_req: Request, res: Response) => {
     mcp_endpoint: '/mcp',
     transport: 'streamable-http',
     auth: 'Authorization: Bearer <api-key>',
-    docs: 'https://github.com/<your-org>/zyaro-event-store-mcp#readme',
+    docs: 'https://github.com/biru-codeastromer/multi-tenant-ecommerce-analytics-mcp#readme',
   });
 });
 
