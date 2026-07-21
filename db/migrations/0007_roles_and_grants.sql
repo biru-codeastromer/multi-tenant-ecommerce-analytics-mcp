@@ -34,8 +34,25 @@ ALTER ROLE mcp_auth   WITH PASSWORD '${MCP_AUTH_PASSWORD}';
 
 -- Explicitly strip every escalation attribute, in case the role predates this
 -- migration or was touched by hand.
-ALTER ROLE mcp_tenant NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION NOINHERIT;
-ALTER ROLE mcp_auth   NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION NOINHERIT;
+--
+-- PORTABILITY: NOSUPERUSER / NOBYPASSRLS / NOREPLICATION are superuser-only to
+-- SET, even to "NO". Locally the migration runs as a superuser so they are
+-- enforced explicitly. On a managed host (Supabase) the migrating role is NOT
+-- a superuser, but a role it CREATEs is already NOSUPERUSER/NOBYPASSRLS/
+-- NOREPLICATION by construction (a non-superuser cannot grant attributes it
+-- lacks), so skipping them there changes nothing. tests/isolation.test.ts
+-- asserts rolsuper=false and rolbypassrls=false, which holds either way.
+-- The always-safe attributes (NOCREATEDB/NOCREATEROLE/NOINHERIT) are set
+-- unconditionally; the superuser-only ones are attempted and tolerated.
+ALTER ROLE mcp_tenant NOCREATEDB NOCREATEROLE NOINHERIT;
+ALTER ROLE mcp_auth   NOCREATEDB NOCREATEROLE NOINHERIT;
+DO $$
+BEGIN
+  ALTER ROLE mcp_tenant NOSUPERUSER NOBYPASSRLS NOREPLICATION;
+  ALTER ROLE mcp_auth   NOSUPERUSER NOBYPASSRLS NOREPLICATION;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'Skipping superuser-only role attributes (not a superuser); created roles already lack them.';
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- Resource limits set on the ROLE, not just in application code. A statement
@@ -50,7 +67,16 @@ ALTER ROLE mcp_tenant SET lock_timeout = '2s';
 ALTER ROLE mcp_tenant SET default_transaction_read_only = on;
 ALTER ROLE mcp_tenant SET search_path = 'public';
 -- Truncates any accidental verbosity in errors headed back toward a caller.
-ALTER ROLE mcp_tenant SET log_min_error_statement = 'panic';
+-- log_min_error_statement is a superuser-only (SUSET) GUC, so setting it per
+-- role needs superuser. It is belt-and-braces only: src/util/errors.ts already
+-- sanitises every error before it reaches a caller. Attempt it, tolerate the
+-- managed-host case where it cannot be set.
+DO $$
+BEGIN
+  ALTER ROLE mcp_tenant SET log_min_error_statement = 'panic';
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'Skipping log_min_error_statement (superuser-only); app-layer error sanitising still applies.';
+END $$;
 
 ALTER ROLE mcp_auth SET statement_timeout = '5s';
 ALTER ROLE mcp_auth SET idle_in_transaction_session_timeout = '10s';
@@ -73,8 +99,23 @@ REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM mcp_tenant, mcp_auth;
 GRANT USAGE ON SCHEMA public TO mcp_tenant, mcp_auth;
 
 -- Deny the database-level escape hatches outright.
-REVOKE ALL ON SCHEMA information_schema FROM mcp_tenant, mcp_auth;
-REVOKE CREATE ON DATABASE zyaro_events FROM PUBLIC;
+-- information_schema is owned by a bootstrap superuser, so on a managed host
+-- this REVOKE may not be permitted. It is belt-and-braces regardless: the
+-- information_schema views already filter to objects the querying role can
+-- access, so mcp_tenant sees nothing there it cannot already read.
+DO $$
+BEGIN
+  REVOKE ALL ON SCHEMA information_schema FROM mcp_tenant, mcp_auth;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'Skipping information_schema REVOKE (not owner); its views are privilege-filtered anyway.';
+END $$;
+-- Portable across database names (local dev uses `zyaro_events`, Supabase uses
+-- `postgres`): REVOKE cannot take a function, so the current database name is
+-- interpolated via a DO block rather than hardcoded.
+DO $$
+BEGIN
+  EXECUTE format('REVOKE CREATE ON DATABASE %I FROM PUBLIC', current_database());
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- mcp_tenant: SELECT on tenant-visible tables. Nothing else, nowhere else.
@@ -124,10 +165,18 @@ BEGIN
       'dblink', 'dblink_connect', 'dblink_exec', 'dblink_send_query'
     )
   LOOP
-    EXECUTE format(
-      'REVOKE ALL ON FUNCTION %I.%I(%s) FROM PUBLIC, mcp_tenant, mcp_auth',
-      fn.nspname, fn.proname, fn.args
-    );
+    -- Per-function EXCEPTION tolerance: these live in pg_catalog, owned by a
+    -- bootstrap superuser, so on a managed host the REVOKE is not permitted.
+    -- That is fine, because the real control is that mcp_tenant is NOSUPERUSER
+    -- (these functions are superuser-only to execute regardless of grant).
+    BEGIN
+      EXECUTE format(
+        'REVOKE ALL ON FUNCTION %I.%I(%s) FROM PUBLIC, mcp_tenant, mcp_auth',
+        fn.nspname, fn.proname, fn.args
+      );
+    EXCEPTION WHEN insufficient_privilege THEN
+      NULL;  -- not the owner (managed host); NOSUPERUSER is the real guard
+    END;
   END LOOP;
 END $$;
 
@@ -138,7 +187,11 @@ DECLARE
   w record;
 BEGIN
   FOR w IN SELECT fdwname FROM pg_foreign_data_wrapper LOOP
-    EXECUTE format('REVOKE ALL ON FOREIGN DATA WRAPPER %I FROM PUBLIC, mcp_tenant, mcp_auth', w.fdwname);
+    BEGIN
+      EXECUTE format('REVOKE ALL ON FOREIGN DATA WRAPPER %I FROM PUBLIC, mcp_tenant, mcp_auth', w.fdwname);
+    EXCEPTION WHEN insufficient_privilege THEN
+      NULL;  -- wrapper owned by another role on a managed host; not usable by NOSUPERUSER roles anyway
+    END;
   END LOOP;
 END $$;
 

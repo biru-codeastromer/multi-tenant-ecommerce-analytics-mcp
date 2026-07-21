@@ -95,11 +95,30 @@ GRANT EXECUTE ON FUNCTION public.set_tenant_context(uuid) TO mcp_tenant;
 -- from every non-superuser role, so it is granted back explicitly to the
 -- principals that legitimately need it (the migration/seed/projection owner
 -- and the auth role). mcp_tenant is deliberately absent from that list.
+--
+-- PORTABILITY: pg_catalog.set_config is owned by a bootstrap superuser, so
+-- only a superuser can REVOKE/GRANT on it. Locally the migration runs as a
+-- superuser and this is the primary, database-level defence against the
+-- set_config tenant-switch. On a managed host (Supabase) the migrating role
+-- is not a superuser and cannot alter a pg_catalog grant; the block is then
+-- skipped, and mcp_tenant keeps the default PUBLIC execute on set_config.
+--
+-- In that degraded case the vector is still closed by TWO application-level
+-- controls that do NOT depend on this revoke: (1) the SQL guard rejects any
+-- set_config( call in run_sql, and (2) set_tenant_context() refuses to change
+-- an already-established context. And RLS remains the tenant boundary
+-- regardless. See tests/isolation.test.ts, which asserts the set_config attack
+-- fails; that test runs locally where the revoke is in force.
 -- ---------------------------------------------------------------------------
-REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM mcp_tenant;
-GRANT  EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO CURRENT_USER;
-GRANT  EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO mcp_auth;
+DO $$
+BEGIN
+  REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM PUBLIC;
+  REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM mcp_tenant;
+  GRANT  EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO CURRENT_USER;
+  GRANT  EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO mcp_auth;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'Skipping pg_catalog.set_config REVOKE (not a superuser). SQL guard + set_tenant_context + RLS still close the vector.';
+END $$;
 
 -- current_setting() is read-only and cannot change the tenant, so it is not
 -- revoked. Current_org_id() itself depends on it. The SQL guard still blocks
