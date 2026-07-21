@@ -49,7 +49,7 @@ npm install
 cp .env.example .env          # then fill in the values (see below)
 npm run bootstrap             # docker up + migrate + seed + project + discover
 npm run dev                   # MCP server on http://localhost:8787/mcp
-npm test                      # 176 tests, including the isolation suite
+npm test                      # 191 tests, including the isolation suite
 ```
 
 Generating the three secrets `.env` needs:
@@ -88,7 +88,8 @@ Deployment to Supabase + Railway: **[docs/deploy.md](docs/deploy.md)**.
 > credential regardless of whether it points at demo data.
 
 Both keys are read-only, rate-limited to 60 req/min, and scoped to their own org by the
-database. To verify isolation yourself:
+database. The seed issues **three** keys per org: a full key, a restricted
+(`read:analytics`-only) key, and a pre-revoked key. To verify the guarantees yourself:
 
 1. Connect as **Org A** (`nordvik-fashion`) and ask *"what events do I track?"*. You'll
    get `app_open`, `added_to_bag`, `product_viewed`…
@@ -97,8 +98,9 @@ database. To verify isolation yourself:
 3. Ask Org A: *"show me FreshCart's orders"* or *"list all organizations"*. You will get
    Org A's own single organization row. There is no tool argument that could do otherwise,
    and the SQL fallback is bounded by RLS.
-4. Each org also has a **pre-revoked** key in the seed output, to confirm revocation is
-   immediate.
+4. With the **restricted** key, `run_sql` is not offered and is refused if called, while the
+   named-metric tools still work. With the **full** key, `run_sql` is available.
+5. The **pre-revoked** key is rejected outright, confirming revocation is immediate.
 
 ---
 
@@ -111,11 +113,13 @@ src/
     pools.ts                two pools: mcp_tenant (analytics), mcp_auth (credentials)
     tenantSession.ts        ★ pooler-safe org session (the isolation core)
   auth/credentials.ts       peppered hashing, resolution, revocation, rate limiting
+  auth/scopes.ts            read:analytics vs read:raw_sql, enforced per tool
   registry/
     discovery.ts            JSONB scan; never overwrites human descriptions
     context.ts              ★ <2k-token org-specific data dictionary
     contextCache.ts         cached by (org_id, registry_version_hash)
     canonical.ts            canonical→org event names, and honest "not tracked"
+  projection/project.ts     incremental derived-table refresh (affected-key recompute)
   metrics/build.ts          template binding; dimensions via whitelist lookup
   sql/guard.ts              run_sql guard (convenience, NOT the boundary)
   tools/                    7 tools, none accepting org_id
@@ -125,7 +129,7 @@ src/
 
 db/migrations/              0001-0010, forward-only, checksum-verified
 scripts/                    migrate / seed / project / discover / reset
-tests/                      176 tests across 5 suites
+tests/                      191 tests across 7 suites
 ```
 
 **Request lifecycle**
@@ -320,18 +324,29 @@ end up in the shipped dictionary, and a real customer email there would be perma
 
 ## Tool surface
 
-| Tool | Purpose |
-|---|---|
-| `get_schema_context` | Full data dictionary (cached) |
-| `list_events` | Event names, categories, 30-day volume |
-| `describe_event` | Properties, types, samples, enums for one event |
-| `query_metric` | Named metric + range + dimension + filters → time series |
-| `funnel` | Ordered event list → step-wise conversion |
-| `top_n` | Top products / searches / categories by a measure |
-| `run_sql` | Guarded read-only fallback |
+| Tool | Purpose | Scope |
+|---|---|---|
+| `get_schema_context` | Full data dictionary (cached) | `read:analytics` |
+| `list_events` | Event names, categories, 30-day volume | `read:analytics` |
+| `describe_event` | Properties, types, samples, enums for one event | `read:analytics` |
+| `query_metric` | Named metric + range + dimension + filters → time series | `read:analytics` |
+| `funnel` | Ordered event list → step-wise conversion | `read:analytics` |
+| `top_n` | Top products / searches / categories by a measure | `read:analytics` |
+| `run_sql` | Guarded read-only fallback | `read:raw_sql` |
 
 **None takes an `org_id`.** A test walks every registered tool's `inputSchema` and fails on
 any org-ish property name, so it stays true as tools are added.
+
+**Scopes are enforced, not decorative.** A credential carries a scope set. The six semantic
+tools need `read:analytics`; the raw-SQL escape hatch needs `read:raw_sql`. A key holding
+only `read:analytics` is never even shown `run_sql` in `tools/list`, and if the model calls
+it anyway the request is denied at the handler (audited as `denied`) before any database
+work. This is a real boundary: a dashboard or vendor key can compute named metrics but
+cannot be coaxed, by prompt injection or otherwise, into running arbitrary SQL. Enforced in
+`src/mcp/buildServer.ts`, defined in [`src/auth/scopes.ts`](src/auth/scopes.ts), and tested
+end to end over real HTTP in [`tests/scopes.test.ts`](tests/scopes.test.ts). The demo seed
+issues both a full key and a restricted (`read:analytics`-only) key per org so the
+difference is testable directly.
 
 Tool descriptions are treated as prompt surface. Written assuming the model has never seen
 this database, because it hasn't. Each says what it returns, when to prefer it over an
@@ -509,7 +524,7 @@ a watermark on `event_time` would permanently skip late arrivals.
 ## Testing
 
 ```bash
-npm test                 # 176 tests, 5 suites
+npm test                 # 191 tests, 7 suites
 npm run test:isolation   # the 43-test isolation suite alone
 ```
 
@@ -520,6 +535,8 @@ npm run test:isolation   # the 43-test isolation suite alone
 | `tools.test.ts` | 39 | canonical resolution, not_tracked, money, time, dirty data |
 | `discovery.test.ts` | 22 | discovery job, description preservation, context, caching |
 | `injection.test.ts` | 14 | prompt injection, error leakage, PII |
+| `scopes.test.ts` | 15 | scope enforcement end to end over real HTTP |
+| `projection.test.ts` | 4 | incremental projection, late arrivals, incr == full |
 
 The isolation suite doesn't check that isolation was *configured*: it **attacks** it.
 Every test is something that would succeed against a plausible wrong implementation:
@@ -654,9 +671,9 @@ than in application code.
 5. **Cross-tenant fuzzing in CI.** Generate random SQL and random tool arguments, assert no
    response ever contains another org's UUID. The `set_config` hole would have been caught
    by that on day one instead of by a test I happened to write.
-6. **A credential-management surface**, issue, label, scope, rotate, revoke. Plus scope
-   enforcement. `scopes` is stored and returned today but nothing reads it; that's honest
-   groundwork, not a feature.
+6. **A credential-management surface**, issue, label, rotate, revoke, from a UI rather than
+   SQL. Scope enforcement itself already ships (`read:analytics` vs `read:raw_sql`); what is
+   missing is the self-serve tooling around issuing and rotating keys.
 7. **Query-plan regression tests** asserting that the composite indexes are actually used,
    so a future refactor can't silently reintroduce a cross-tenant seq scan.
 
@@ -666,14 +683,12 @@ than in application code.
 
 Stated plainly, because the honest version is more useful than the flattering one.
 
-- **`scopes` is not enforced.** Stored on the credential and returned by the resolver;
-  nothing checks it. Every valid key today has full read access. Groundwork, not a feature.
 - **The context cache is per-process.** Two replicas each generate independently on a
   registry change. Correct (the payload is deterministic) but not optimal.
-- **The projection is a full recompute per org**, not truly incremental. The
-  `projection_state` watermark is written and would drive an incremental path; the queries
-  don't yet consume it. At this data volume it's a non-issue and I'd rather say so than
-  imply otherwise.
+- **Scope granularity is coarse.** Two scopes only, `read:analytics` and `read:raw_sql`
+  (enforced, see [Tool surface](#tool-surface)). Per-metric or per-dimension scoping is a
+  real product feature but a billing/onboarding concern more than a correctness one, so it
+  is future work rather than half-built.
 - **No FX conversion.** Multi-currency orgs get per-currency rows and an explicit note.
 - **`conversion_rate` can't be dimensioned**, declared in `allowed_dimensions` as `none`
   rather than silently returning a wrong breakdown.

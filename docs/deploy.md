@@ -193,6 +193,8 @@ Questions worth trying:
 - "What are people searching for that returns no results?"
 - "Compare my conversion rate to other stores". Should decline, with a reason
 - To Aurelia: "how many searches yesterday?". Should say *not tracked*, not zero
+- With the restricted key, ask it to "run raw SQL": `run_sql` is not offered and is refused
+  if forced, while named-metric questions still work
 
 ---
 
