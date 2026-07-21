@@ -1,0 +1,36 @@
+name: keepalive
+
+# Pings the deployed /health endpoint on a schedule so the free-tier demo stays
+# usable for reviewers:
+#   * it resets Supabase's 7-day inactivity timer (a paused project is the only
+#     failure that needs manual recovery; /health runs SELECT 1 on the database,
+#     which counts as activity), and
+#   * it wakes the Render web service, which otherwise sleeps after 15 min idle.
+#
+# GitHub-hosted schedules can run late under load, so this is a floor, not a
+# guarantee of sub-15-minute pings. That is fine: the Render service always
+# wakes on the next real request (~30-60s cold start), and even an occasional
+# ping is far more than enough to keep Supabase from pausing. No secrets needed;
+# /health returns no tenant data and takes no credential.
+on:
+  schedule:
+    - cron: '*/12 * * * *'   # every 12 minutes (best-effort on GitHub's scheduler)
+  workflow_dispatch: {}       # allow a manual ping from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          set -e
+          url="https://zyaro-analytics-mcp.onrender.com/health"
+          # Generous timeout so a cold start (up to ~60s) still counts as a wake.
+          code=$(curl -sS -m 90 -o /tmp/health.json -w "%{http_code}" "$url" || echo "000")
+          echo "HTTP $code"
+          cat /tmp/health.json || true
+          # A cold-starting service may return 502/503 briefly; that still woke
+          # it and still touched the database, so only a total failure is fatal.
+          if [ "$code" = "000" ]; then
+            echo "::warning::health endpoint unreachable this run"
+          fi
