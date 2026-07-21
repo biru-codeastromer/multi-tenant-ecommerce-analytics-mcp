@@ -27,7 +27,10 @@ services:
     # Closest free region to an India-based reviewer. Also available: oregon,
     # ohio, virginia, frankfurt.
     region: singapore
-    buildCommand: npm ci && npm run build
+    # --include=dev is required: NODE_ENV=production (below) otherwise makes
+    # npm omit devDependencies, but the build needs TypeScript (a devDep) to
+    # compile src/ into dist/. Runtime still uses only production deps.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /health
     autoDeploy: true
