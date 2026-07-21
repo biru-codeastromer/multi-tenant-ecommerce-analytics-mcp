@@ -19,6 +19,7 @@ import pg from 'pg';
 import 'dotenv/config';
 import { ownerUrlOrThrow } from '../src/config.js';
 import { generateApiKey } from '../src/auth/credentials.js';
+import { DEFAULT_SCOPES, FULL_SCOPES } from '../src/auth/scopes.js';
 import { ORG_SPECS, type OrgSpec, type EventSpec } from '../db/seed/specs.js';
 
 // --------------------------------------------------------------------------
@@ -583,21 +584,31 @@ async function main(): Promise<void> {
       const orgId = org!.id;
 
       // -- credentials ------------------------------------------------------
-      // Two per org: a primary demo key, and a second key that is issued and
-      // immediately revoked so the revocation path has a fixture to test.
+      // Three per org, so a reviewer can exercise every credential path:
+      //   * demo-primary    full scopes  (read:analytics + read:raw_sql)
+      //   * demo-restricted analytics only, so run_sql is refused and hidden
+      //   * demo-revoked    issued then revoked, so revocation can be tested
       const primary = generateApiKey(spec.slug);
       await client.query(
         `INSERT INTO api_credentials (org_id, key_hash, key_prefix, label, scopes)
          VALUES ($1,$2,$3,$4,$5)`,
-        [orgId, primary.hash, primary.prefix, 'demo-primary', ['read:analytics']]
+        [orgId, primary.hash, primary.prefix, 'demo-primary', [...FULL_SCOPES]]
       );
-      issuedKeys.push({ org: spec.slug, label: 'demo-primary', key: primary.raw });
+      issuedKeys.push({ org: spec.slug, label: 'demo-primary (full)', key: primary.raw });
+
+      const restricted = generateApiKey(spec.slug);
+      await client.query(
+        `INSERT INTO api_credentials (org_id, key_hash, key_prefix, label, scopes)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [orgId, restricted.hash, restricted.prefix, 'demo-restricted', [...DEFAULT_SCOPES]]
+      );
+      issuedKeys.push({ org: spec.slug, label: 'demo-restricted (no run_sql)', key: restricted.raw });
 
       const revoked = generateApiKey(spec.slug);
       await client.query(
         `INSERT INTO api_credentials (org_id, key_hash, key_prefix, label, scopes, revoked_at)
          VALUES ($1,$2,$3,$4,$5, now())`,
-        [orgId, revoked.hash, revoked.prefix, 'demo-revoked-fixture', ['read:analytics']]
+        [orgId, revoked.hash, revoked.prefix, 'demo-revoked-fixture', [...FULL_SCOPES]]
       );
       issuedKeys.push({ org: spec.slug, label: 'demo-revoked (must be rejected)', key: revoked.raw });
 

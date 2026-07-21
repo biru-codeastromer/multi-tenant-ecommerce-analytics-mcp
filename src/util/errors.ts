@@ -17,6 +17,7 @@
 
 export type ErrorCode =
   | 'unauthorized'
+  | 'forbidden'
   | 'rate_limited'
   | 'invalid_argument'
   | 'unknown_metric'
@@ -55,6 +56,27 @@ export class UnauthorizedError extends McpToolError {
   constructor(message = 'Invalid or revoked API credential.') {
     super('unauthorized', message);
     this.name = 'UnauthorizedError';
+  }
+}
+
+/**
+ * The credential is valid but lacks the scope a tool requires. Distinct from
+ * `unauthorized` on purpose: the difference between "who are you" and "you are
+ * known, but not allowed this" is exactly what a caller needs in order to stop
+ * retrying and ask a human for a broader key instead.
+ */
+export class ScopeError extends McpToolError {
+  constructor(toolName: string, required: string, held: string[]) {
+    super(
+      'forbidden',
+      `This credential is not permitted to call "${toolName}".`,
+      {
+        hint:
+          `"${toolName}" requires the "${required}" scope; this credential holds [${held.join(', ') || 'none'}]. ` +
+          `Ask the organization for a credential that includes "${required}", or use a tool your scopes already allow.`,
+      }
+    );
+    this.name = 'ScopeError';
   }
 }
 

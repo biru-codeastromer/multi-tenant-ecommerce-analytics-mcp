@@ -27,6 +27,7 @@ interface QueryMetricArgs {
 
 export const queryMetricTool: ToolDefinition<QueryMetricArgs> = {
   name: 'query_metric',
+  requiredScope: 'read:analytics',
   title: 'Query a metric',
   description:
     'Computes a named metric as a time series, optionally broken down by one dimension and filtered. THIS IS THE TOOL TO REACH FOR FIRST for any "how many / how much / what is my rate" question. ' +

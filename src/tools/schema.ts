@@ -15,6 +15,7 @@ import { config } from '../config.js';
 // ---------------------------------------------------------------------------
 export const getSchemaContextTool: ToolDefinition<{ refresh?: boolean }> = {
   name: 'get_schema_context',
+  requiredScope: 'read:analytics',
   title: 'Get schema context',
   description:
     'Returns the complete data dictionary for your organization: its actual event names (which differ from every other org), how those names map to cross-org canonical concepts, event properties with types and enum values, the analytics tables and their join keys, available metrics with THIS org\'s definitions, known data-quality problems, and worked question->SQL examples. ' +
@@ -64,6 +65,7 @@ interface ListEventsArgs {
 
 export const listEventsTool: ToolDefinition<ListEventsArgs> = {
   name: 'list_events',
+  requiredScope: 'read:analytics',
   title: 'List events',
   description:
     'Lists the event names your organization actually fires, with category, canonical mapping, 30-day volume, and when each was last seen. ' +
@@ -159,6 +161,7 @@ export const listEventsTool: ToolDefinition<ListEventsArgs> = {
 // ---------------------------------------------------------------------------
 export const describeEventTool: ToolDefinition<{ event_name: string }> = {
   name: 'describe_event',
+  requiredScope: 'read:analytics',
   title: 'Describe event',
   description:
     'Returns the full property schema for one event: every property key, its inferred data type, how often it is present, cardinality, sample values, and the complete enum when cardinality is low. ' +

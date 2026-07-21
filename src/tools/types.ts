@@ -21,5 +21,12 @@ export interface ToolDefinition<A = Record<string, unknown>> {
   title: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /**
+   * The scope a credential must hold to call this tool. Checked once, in the
+   * MCP call handler, before the handler runs; the tool body never sees an
+   * unauthorised caller. Tools without a higher requirement default to
+   * read:analytics in src/tools/index.ts.
+   */
+  requiredScope: string;
   handler: (args: A, ctx: ToolContext) => Promise<ToolResponse>;
 }

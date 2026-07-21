@@ -38,6 +38,7 @@ interface FunnelArgs {
 
 export const funnelTool: ToolDefinition<FunnelArgs> = {
   name: 'funnel',
+  requiredScope: 'read:analytics',
   title: 'Funnel analysis',
   description:
     'Computes step-wise conversion through an ordered sequence of events. Each step must occur AFTER the previous one for the same actor and within a time window, so this measures real progression rather than co-occurrence. ' +

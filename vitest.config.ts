@@ -8,6 +8,9 @@ export default defineConfig({
     // force backend reuse. Running files in parallel would let one file's
     // pool surgery race another's assertions.
     fileParallelism: false,
+    // Keeps src/server.ts from binding a port on import: the scope suite mounts
+    // the app on an ephemeral port itself.
+    env: { NODE_ENV: 'test' },
     testTimeout: 30_000,
     hookTimeout: 30_000,
     include: ['tests/**/*.test.ts'],

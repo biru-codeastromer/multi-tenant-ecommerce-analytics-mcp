@@ -212,6 +212,7 @@ interface TopNArgs {
 
 export const topNTool: ToolDefinition<TopNArgs> = {
   name: 'top_n',
+  requiredScope: 'read:analytics',
   title: 'Top N',
   description:
     'Ranks the top items by a chosen measure over a date range. Top products by views, units or revenue, top searches, top zero-result searches, top categories, brands, cities or channels. ' +

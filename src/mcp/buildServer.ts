@@ -7,8 +7,9 @@
  * before any tool is registered. There is no shared mutable "current tenant"
  * that a concurrent request could race against.
  *
- * The alternative. One long-lived server plus a request-scoped context. * works right up until an async boundary interleaves two requests, and then
- * fails silently and catastrophically. Constructing per request costs a few
+ * The alternative, one long-lived server plus a request-scoped context, works
+ * right up until an async boundary interleaves two requests, and then fails
+ * silently and catastrophically. Constructing per request costs a few
  * microseconds and removes the entire class of bug.
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -20,10 +21,11 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import type { ResolvedTenant } from '../auth/credentials.js';
 import { TOOLS, TOOLS_BY_NAME } from '../tools/index.js';
+import { hasScope } from '../auth/scopes.js';
 import { withOrgSession } from '../db/tenantSession.js';
 import { getOrgContext } from '../registry/contextCache.js';
 import { renderResponse, type ToolResponse } from '../util/render.js';
-import { toSafeError } from '../util/errors.js';
+import { toSafeError, ScopeError } from '../util/errors.js';
 import { writeAudit } from '../audit/log.js';
 
 export const CONTEXT_RESOURCE_URI = 'schema://org/context';
@@ -57,8 +59,13 @@ export async function buildServerForTenant(
   );
 
   // ---- tools/list ---------------------------------------------------------
+  // Advertise only the tools this credential's scopes permit. A key without
+  // read:raw_sql never learns run_sql exists, so a model driving it is never
+  // tempted to reach for a tool it cannot use, and a prompt injection has one
+  // fewer surface to name. The call handler enforces the same rule, so this
+  // filtering is ergonomics, not the security boundary.
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: TOOLS.map((t) => ({
+    tools: TOOLS.filter((t) => hasScope(tenant.scopes, t.requiredScope)).map((t) => ({
       name: t.name,
       title: t.title,
       description: t.description,
@@ -128,6 +135,37 @@ export async function buildServerForTenant(
         latencyMs: Date.now() - started, status: 'error',
         errorCode: 'unknown_tool', errorDetail: `Unknown tool ${toolName}`, clientIp,
       });
+      return { content: [{ type: 'text', text: renderResponse(response) }], isError: true };
+    }
+
+    // Scope check, BEFORE the tool runs and before any database work. A
+    // credential that lacks the tool's required scope is refused here, audited
+    // as `denied`, and never reaches the handler. This is the enforcement
+    // point; the tools/list filtering above is only a convenience on top of it.
+    if (!hasScope(tenant.scopes, tool.requiredScope)) {
+      const scopeErr = new ScopeError(toolName, tool.requiredScope, tenant.scopes);
+      await writeAudit({
+        orgId: tenant.orgId,
+        credentialId: tenant.credentialId,
+        toolName,
+        arguments: args,
+        generatedSql: null,
+        rowsReturned: null,
+        latencyMs: Date.now() - started,
+        status: 'denied',
+        errorCode: 'forbidden',
+        errorDetail: `scope ${tool.requiredScope} required; held [${tenant.scopes.join(', ')}]`,
+        clientIp,
+      });
+      const response: ToolResponse = {
+        status: 'error',
+        summary: scopeErr.message,
+        error: {
+          code: 'forbidden',
+          message: scopeErr.message,
+          ...(scopeErr.hint ? { hint: scopeErr.hint } : {}),
+        },
+      };
       return { content: [{ type: 'text', text: renderResponse(response) }], isError: true };
     }
 

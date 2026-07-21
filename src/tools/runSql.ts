@@ -21,6 +21,7 @@ import { config } from '../config.js';
 
 export const runSqlTool: ToolDefinition<{ sql: string; explain_intent?: string }> = {
   name: 'run_sql',
+  requiredScope: 'read:raw_sql',
   title: 'Run guarded SQL',
   description:
     'Executes a single read-only SELECT against your organization\'s analytics tables. USE THIS ONLY when query_metric, funnel, top_n, list_events and describe_event cannot express the question. Those tools encode your org\'s own metric definitions, timezone handling and event-name mapping, all of which you must reimplement correctly here. ' +

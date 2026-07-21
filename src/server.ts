@@ -201,25 +201,30 @@ app.delete('/mcp', (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
-const server = app.listen(config.server.port, () => {
-  log('info', 'listening', {
-    port: config.server.port,
-    env: config.server.env,
-    endpoint: `http://localhost:${config.server.port}/mcp`,
+// Bind a port only when run as the entrypoint. Under test the suite imports
+// `app` and mounts it on an ephemeral port itself, so the module must not grab
+// the configured port or install process-wide signal handlers on import.
+if (config.server.env !== 'test') {
+  const server = app.listen(config.server.port, () => {
+    log('info', 'listening', {
+      port: config.server.port,
+      env: config.server.env,
+      endpoint: `http://localhost:${config.server.port}/mcp`,
+    });
   });
-});
 
-async function shutdown(signal: string): Promise<void> {
-  log('info', 'shutting down', { signal });
-  server.close(async () => {
-    await closePools();
-    process.exit(0);
-  });
-  // Do not hang forever on a stuck connection.
-  setTimeout(() => process.exit(1), 10_000).unref();
+  const shutdown = async (signal: string): Promise<void> => {
+    log('info', 'shutting down', { signal });
+    server.close(async () => {
+      await closePools();
+      process.exit(0);
+    });
+    // Do not hang forever on a stuck connection.
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
-
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT', () => void shutdown('SIGINT'));
 
 export { app };
