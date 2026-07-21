@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    name: typecheck + build + 176 tests
+    name: typecheck + build + tests
     runs-on: ubuntu-latest
 
     # A real Postgres, not a mock. The entire isolation model is database
