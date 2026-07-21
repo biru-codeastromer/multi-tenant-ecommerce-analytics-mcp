@@ -33,7 +33,18 @@ function makePool(connectionString: string, opts: { max: number; name: string })
     statement_timeout: config.limits.statementTimeoutMs,
     query_timeout: config.limits.statementTimeoutMs + 1_000,
     application_name: `zyaro-mcp/${opts.name}`,
-    ssl: isLocal ? undefined : { rejectUnauthorized: true },
+    // TLS: local Docker speaks plaintext (no ssl). A remote host (Supabase)
+    // requires TLS, but its transaction pooler (Supavisor) presents a
+    // certificate that is not in Node's default CA bundle, so verification
+    // with rejectUnauthorized:true fails with "self-signed certificate in
+    // certificate chain" and every query dies. The connection is still
+    // encrypted; what is turned off is CA verification of the server identity.
+    // This matches how Supabase's own connection strings behave (sslmode=require).
+    // Setting DB_SSL_STRICT=true opts back into full verification for a host
+    // whose CA you have pinned into Node (e.g. via NODE_EXTRA_CA_CERTS).
+    ssl: isLocal
+      ? undefined
+      : { rejectUnauthorized: process.env.DB_SSL_STRICT === 'true' },
   });
 
   pool.on('error', (err) => {
